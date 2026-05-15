@@ -222,7 +222,9 @@ public class BitmapFont {
                 renderer.drawRect(cx, top, w * 0.5f, barH, r, g, b);
                 renderer.drawRect(cx + w * 0.1f, middle + h * 0.15f, barW, barH * 0.6f, r, g, b);
                 renderer.drawRect(cx, middle, w * 0.5f, barH, r, g, b);
-                renderer.drawRect(cx + w * 0.1f, middle - h * 0.15f, w * 0.3f, barH * 0.5f, r, g, b);
+                // Diagonal mejorada: múltiples pasos escalonados
+                renderer.drawRect(cx + w * 0.05f, middle - h * 0.05f, barW * 1.3f, barH * 0.35f, r, g, b);
+                renderer.drawRect(cx + w * 0.15f, middle - h * 0.15f, barW * 1.3f, barH * 0.35f, r, g, b);
                 break;
             case 'S':
                 renderer.drawRect(cx, top, w * 0.5f, barH, r, g, b);

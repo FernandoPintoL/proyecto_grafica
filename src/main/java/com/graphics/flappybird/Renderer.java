@@ -1,6 +1,7 @@
 package com.graphics.flappybird;
 
 import java.nio.FloatBuffer;
+
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
@@ -26,8 +27,8 @@ public class Renderer {
     // Para animación de tiempo.
     private float tiempoGlobal = 0.0f;
 
-    // Sistema de texto.
-    private BitmapFont font;
+    // Sistema de texto - TextureFont con bitmap mejorado
+    private TextureFont font;
 
     // Quad unitario centrado en [-0.5, 0.5] x [-0.5, 0.5].
     private static final float[] QUAD_VERTICES = {
@@ -42,7 +43,7 @@ public class Renderer {
     public Renderer() {
         crearShaders();
         crearQuad();
-        font = new BitmapFont(this, 1.0f);
+        font = new TextureFont();
     }
 
     /**
@@ -132,7 +133,7 @@ public class Renderer {
     /**
      * Renderiza el frame completo del juego.
      */
-    public void render(Game game, ParticleSystem particles) {
+    public void render(Game game, ParticleSystem particles, int windowWidth, int windowHeight) {
         tiempoGlobal += 0.016f; // ~60 FPS.
 
         // Limpiar con color de cielo.
@@ -165,16 +166,17 @@ public class Renderer {
         particles.render(this);
 
         // HUD.
-        drawHUD(game);
+        drawHUD(game, windowWidth, windowHeight);
 
-        // Pantalla de inicio.
+        
+        // Pantalla de inicio (SOLO si el juego no ha empezado).
         if (!game.gameStarted) {
-            drawStartScreen();
+            drawStartScreen(windowWidth, windowHeight);
         }
 
-        // Pantalla de game over.
-        if (game.gameOver) {
-            drawGameOverScreen(game);
+        // Pantalla de game over (SOLO después de que el juego empezó y terminó).
+        if (game.gameStarted && game.gameOver) {
+            drawGameOverScreen(game, windowWidth, windowHeight);
         }
     }
 
@@ -382,16 +384,15 @@ public class Renderer {
     }
 
     /**
-     * HUD: paneles de información con números MUY GRANDES y legibles.
-     * IMPORTANTE: dibujar paneles PRIMERO, números DESPUÉS para que queden enfrente.
+     * HUD: paneles con números grandes legibles.
      */
-    private void drawHUD(Game game) {
+    private void drawHUD(Game game, int windowWidth, int windowHeight) {
         // PRIMERO: Todos los paneles (fondos)
         drawRectAlpha(-0.95f, 0.88f, 0.18f, 0.08f, 0.98f, 0.85f, 0.20f, 0.85f);
         drawRectAlpha(0.77f, 0.88f, 0.18f, 0.08f, 0.20f, 0.85f, 0.98f, 0.85f);
         drawRectAlpha(-0.12f, 0.88f, 0.24f, 0.08f, 0.6f, 0.6f, 0.2f, 0.75f);
 
-        // DESPUÉS: Todos los números (enfrente de los paneles) - MUCHO MÁS GRANDES
+        // DESPUÉS: Todos los números (enfrente de los paneles)
         font.renderNumber(game.bird1.score, -0.94f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
         font.renderNumber(game.bird2.score, 0.78f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
         int diffLevel = Math.round(game.getDifficultyMultiplier() * 10) / 10;
@@ -399,67 +400,71 @@ public class Renderer {
     }
 
     /**
-     * Pantalla de inicio con instrucciones claras y letras GRANDES.
+     * Pantalla de inicio con instrucciones claras.
      */
-    private void drawStartScreen() {
-        // Panel semi-transparente (oscuro con transparencia).
-        drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, 0.0f, 0.0f, 0.0f, 0.5f);
+    private void drawStartScreen(int windowWidth, int windowHeight) {
+        // Reactivar el programa y VAO (puede estar desactivado después de font.renderText)
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
 
-        // Título: rectángulo grande (gris)
-        drawRectAlpha(-0.6f, 0.55f, 1.2f, 0.15f, 0.2f, 0.2f, 0.2f, 0.95f);
-        font.renderText("FLAPPY BIRD 2P", -0.55f, 0.57f, 0.08f, 1.0f, 1.0f, 1.0f);
+        // Fondo oscuro semi-transparente
+        drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, 0.1f, 0.1f, 0.15f, 0.8f);
 
-        // Panel P1 (naranja) - Control W
-        drawRectAlpha(-0.7f, 0.30f, 0.55f, 0.2f, 0.98f, 0.85f, 0.20f, 0.85f);
-        font.renderText("PLAYER 1: W", -0.65f, 0.37f, 0.07f, 1.0f, 1.0f, 1.0f);
+        // TÍTULO
+        // drawRectAlpha(-0.5f, 0.65f, 1.0f, 0.15f, 0.2f, 0.2f, 0.3f, 0.9f);
+        font.renderText("FLAPPY BIRD 2P", -0.42f, 0.66f, 0.09f, 1.0f, 1.0f, 1.0f);
 
-        // Panel P2 (azul) - Control SPACE
-        drawRectAlpha(0.15f, 0.30f, 0.55f, 0.2f, 0.20f, 0.85f, 0.98f, 0.85f);
-        font.renderText("PLAYER 2: SP", 0.20f, 0.37f, 0.07f, 1.0f, 1.0f, 1.0f);
+        // CONTROLES - P1
+        // drawRectAlpha(-0.75f, 0.40f, 0.45f, 0.15f, 0.98f, 0.85f, 0.20f, 0.85f);
+        font.renderText("PLAYER 1", -0.73f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
+        font.renderText("PRESS W", -0.73f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
 
-        // Instrucción para comenzar (amarillo/verde)
-        drawRectAlpha(-0.6f, 0.05f, 1.2f, 0.12f, 0.6f, 0.6f, 0.2f, 0.8f);
-        font.renderText("PRESS W or SPACE", -0.55f, 0.08f, 0.065f, 0.2f, 0.2f, 0.2f);
+        // CONTROLES - P2
+        // drawRectAlpha(0.30f, 0.40f, 0.45f, 0.15f, 0.20f, 0.85f, 0.98f, 0.85f);
+        font.renderText("PLAYER 2", 0.32f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
+        font.renderText("PRESS SPACE", 0.32f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
 
-        // Información: evitar tuberías (gris oscuro)
-        drawRectAlpha(-0.6f, -0.20f, 1.2f, 0.1f, 0.3f, 0.3f, 0.3f, 0.6f);
-        font.renderText("AVOID PIPES", -0.55f, -0.18f, 0.06f, 1.0f, 1.0f, 1.0f);
+        // INSTRUCCIÓN PARA COMENZAR
+        // drawRectAlpha(-0.5f, 0.18f, 1.0f, 0.12f, 0.7f, 0.6f, 0.2f, 0.8f);
+        font.renderText("TAP TO START THE GAME", -0.45f, 0.20f, 0.075f, 0.2f, 0.2f, 0.2f);
+
+        // OBJETIVO DEL JUEGO
+        // drawRectAlpha(-0.5f, -0.05f, 1.0f, 0.15f, 1.2f, 1.5f, 1.8f, 0.75f);
+        font.renderText("GOAL: AVOID PIPES", -0.48f, 0.02f, 0.07f, 1.0f, 1.0f, 1.0f);
+        font.renderText("SURVIVE AS LONG AS YOU CAN", -0.48f, -0.04f, 0.06f, 0.9f, 0.9f, 0.9f);
+
+        // DIFICULTAD PROGRESIVA
+        // drawRectAlpha(-0.5f, -0.35f, 1.0f, 0.15f, 0.8f, 0.4f, 0.2f, 0.75f);
+        font.renderText("DIFFICULTY INCREASES", -0.48f, -0.28f, 0.07f, 1.0f, 1.0f, 1.0f);
+        font.renderText("GAIN POINTS BY PASSING GAPS", -0.48f, -0.34f, 0.06f, 0.9f, 0.9f, 0.9f);
     }
 
     /**
-     * Pantalla de game over con scores y ganador visible - LETRAS GRANDES.
+     * Pantalla de game over con scores y ganador.
      */
-    private void drawGameOverScreen(Game game) {
-        // Panel oscuro semi-transparente.
-        drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, 0.0f, 0.0f, 0.0f, 0.65f);
+    private void drawGameOverScreen(Game game, int windowWidth, int windowHeight) {
+        // Reactivar el programa y VAO (puede estar desactivado después de font.renderText)
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
 
-        // Título "GAME OVER" (rojo).
-        drawRectAlpha(-0.6f, 0.55f, 1.2f, 0.15f, 0.9f, 0.2f, 0.2f, 0.95f);
-        font.renderText("GAME OVER", -0.55f, 0.57f, 0.08f, 1.0f, 1.0f, 1.0f);
+        // Panel ROJO para debug
+        drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, 1.0f, 0.0f, 0.0f, 0.85f);
 
-        // Panel P1 Score (naranja)
-        drawRectAlpha(-0.6f, 0.30f, 0.55f, 0.2f, 0.98f, 0.85f, 0.20f, 0.85f);
-        font.renderNumber(game.bird1.score, -0.48f, 0.30f, 0.20f, 1.0f, 1.0f, 1.0f);
+        // Título ROJO
+        // drawRectAlpha(-0.6f, 0.55f, 1.2f, 0.15f, 1.0f, 0.0f, 0.0f, 0.95f);
+        font.renderText("GAME OVER", -0.48f, 0.565f, 0.08f, 1.0f, 1.0f, 1.0f);
 
-        // Panel P2 Score (azul)
-        drawRectAlpha(0.05f, 0.30f, 0.55f, 0.2f, 0.20f, 0.85f, 0.98f, 0.85f);
-        font.renderNumber(game.bird2.score, 0.17f, 0.30f, 0.20f, 1.0f, 1.0f, 1.0f);
+        // Panel P1 ROJO
+        // drawRectAlpha(-0.6f, 0.30f, 0.55f, 0.2f, 1.0f, 0.0f, 0.0f, 0.85f);
+        font.renderText("P1: " + game.bird1.score, -0.55f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
 
-        // Indicador de ganador - por color.
-        if (game.bird1.score > game.bird2.score) {
-            drawRectAlpha(-0.6f, 0.05f, 1.2f, 0.15f, 0.98f, 0.85f, 0.20f, 0.9f);
-            font.renderText("P1 WINS", -0.5f, 0.08f, 0.065f, 0.2f, 0.2f, 0.2f);
-        } else if (game.bird2.score > game.bird1.score) {
-            drawRectAlpha(-0.6f, 0.05f, 1.2f, 0.15f, 0.20f, 0.85f, 0.98f, 0.9f);
-            font.renderText("P2 WINS", -0.5f, 0.08f, 0.065f, 1.0f, 1.0f, 1.0f);
-        } else {
-            drawRectAlpha(-0.6f, 0.05f, 1.2f, 0.15f, 0.8f, 0.8f, 0.1f, 0.9f);
-            font.renderText("TIE", -0.5f, 0.08f, 0.065f, 0.2f, 0.2f, 0.2f);
-        }
+        // Panel P2 ROJO
+        // drawRectAlpha(0.05f, 0.30f, 0.55f, 0.2f, 1.0f, 0.0f, 0.0f, 0.85f);
+        font.renderText("P2: " + game.bird2.score, 0.12f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
 
-        // Instrucción para reiniciar (verde/amarillo).
-        drawRectAlpha(-0.6f, -0.20f, 1.2f, 0.12f, 0.6f, 0.6f, 0.2f, 0.8f);
-        font.renderText("PRESS R TO RESTART", -0.55f, -0.18f, 0.06f, 0.2f, 0.2f, 0.2f);
+        // Indicador de ganador ROJO
+        // drawRectAlpha(-0.6f, 0.05f, 1.2f, 0.15f, 1.0f, 0.0f, 0.0f, 0.9f);
+        font.renderText("PRESS R TO RESTART", -0.48f, 0.075f, 0.06f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
@@ -469,5 +474,6 @@ public class Renderer {
         GL30.glDeleteVertexArrays(vao);
         GL15.glDeleteBuffers(vbo);
         GL20.glDeleteProgram(programa);
+        font.cleanup();
     }
 }

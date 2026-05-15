@@ -1,6 +1,9 @@
 package com.graphics.flappybird;
 
 import javax.sound.sampled.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * SoundManager: genera y reproduce sonidos simples usando síntesis de tonos.
@@ -9,6 +12,11 @@ import javax.sound.sampled.*;
 public class SoundManager {
     private static final int SAMPLE_RATE = 44100;
     private static final float VOLUME = 0.7f;
+    private static final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "SoundManager");
+        t.setDaemon(true);
+        return t;
+    });
 
     /**
      * Reproduce un sonido simple: tono de salto (beep corto).
@@ -92,28 +100,28 @@ public class SoundManager {
     }
 
     /**
-     * Reproduce datos de audio en un thread separado para no bloquear.
+     * Reproduce datos de audio en el ejecutor de sonidos para no bloquear.
      */
-    private static void playAudioData(byte[] audioData) throws Exception {
-        AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
-        AudioInputStream audioStream = new AudioInputStream(
-            new java.io.ByteArrayInputStream(audioData),
-            format,
-            audioData.length / 2
-        );
-
-        Clip clip = AudioSystem.getClip();
-        clip.open(audioStream);
-
-        // Reproducir en thread separado.
-        new Thread(() -> {
+    private static void playAudioData(byte[] audioData) {
+        executor.execute(() -> {
             try {
+                AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
+                AudioInputStream audioStream = new AudioInputStream(
+                    new java.io.ByteArrayInputStream(audioData),
+                    format,
+                    audioData.length / 2
+                );
+
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioStream);
                 clip.start();
-                Thread.sleep((audioData.length / 2) / (SAMPLE_RATE / 1000) + 100);
+
+                int durationMs = (audioData.length / 2) / (SAMPLE_RATE / 1000);
+                Thread.sleep(durationMs + 50);
                 clip.close();
             } catch (Exception e) {
-                // Ignorar.
+                // Ignorar errores de sonido.
             }
-        }).start();
+        });
     }
 }

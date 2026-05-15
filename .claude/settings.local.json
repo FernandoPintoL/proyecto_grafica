@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mvn clean *)"
+      "Bash(mvn clean *)",
+      "Bash(mvn package *)",
+      "Bash(java -cp \"target/classes:target/dependency/*\" com.graphics.flappybird.FlappyBirdGame)",
+      "Bash(mvn compile *)",
+      "Bash(mvn exec:java -Dexec.mainClass=\"com.graphics.flappybird.FlappyBirdGame\")",
+      "Bash(mvn exec:java -Dexec.mainClass=\"com.graphics.flappybird.FontGenerator\")",
+      "Bash(java -cp target/classes com.graphics.flappybird.FontGenerator)"
     ]
   }
 }
