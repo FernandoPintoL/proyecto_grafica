@@ -19,4 +19,16 @@ public interface IAudioService {
      * Reproduce el sonido de fin del juego (barrido de frecuencia).
      */
     void playGameOverSound();
+
+    /**
+     * Reproduce sonido de tensión/velocidad (barrido ascendente 400→800Hz).
+     * Transmite sensación de velocidad aumentada.
+     */
+    void playTensionSound();
+
+    /**
+     * Alerta de peligro: dos tonos agudos (1000Hz).
+     * Indica que el juego está en velocidad máxima.
+     */
+    void playSpeedWarning();
 }

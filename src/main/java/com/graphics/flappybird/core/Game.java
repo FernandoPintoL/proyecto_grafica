@@ -112,9 +112,14 @@ public class Game {
 
         // Actualizar dificultad según puntaje máximo.
         int maxScore = Math.max(bird1.score, bird2.score);
+        float prevMultiplier = difficultyMultiplier;
         difficultyMultiplier = 1.0f + (maxScore * 0.05f); // +5% por punto.
         if (difficultyMultiplier > 2.0f) {
             difficultyMultiplier = 2.0f; // Límite máximo.
+            // Alerta sonora cuando se alcanza velocidad máxima.
+            if (prevMultiplier < 2.0f) {
+                ServiceLocator.audio().playSpeedWarning();
+            }
         }
 
         // Spawn de tuberías.
@@ -138,12 +143,14 @@ public class Game {
                 bird1.score++;
                 ServiceLocator.particles().scorePopup(bird1.x, bird1.y);
                 ServiceLocator.audio().playPointSound();
+                ServiceLocator.audio().playTensionSound(); // Sonido de tensión/velocidad.
             }
             if (p.x + (TUBERIA_ANCHO * 0.5f) < BIRD2_X && !p.scored) {
                 p.scored = true;
                 bird2.score++;
                 ServiceLocator.particles().scorePopup(bird2.x, bird2.y);
                 ServiceLocator.audio().playPointSound();
+                ServiceLocator.audio().playTensionSound(); // Sonido de tensión/velocidad.
             }
 
             // Colisiones.
@@ -161,8 +168,9 @@ public class Game {
         }
 
         // Game over: ambos pájaros mueren.
-        if (!bird1.alive && !bird2.alive) {
+        if (!bird1.alive && !bird2.alive && !gameOver) {
             gameOver = true;
+            ServiceLocator.audio().playGameOverSound(); // Sonido de derrota.
         }
     }
 

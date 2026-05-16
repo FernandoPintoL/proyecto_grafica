@@ -13,7 +13,10 @@
       "PowerShell(New-Item *)",
       "Bash(Get-ChildItem *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git commit -m 'docs: Update ARQUITECTURA.md to reflect new layered directory structure and Service Locator pattern *)",
+      "Bash(git commit -m 'feat: Implement geometric bird design with complex shapes *)",
+      "Bash(git commit -m 'feat: Add dynamic sound effects for tension and game over *)"
     ]
   }
 }

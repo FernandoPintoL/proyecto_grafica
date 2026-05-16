@@ -1,9 +1,13 @@
 package com.graphics.flappybird.audio;
 
-import javax.sound.sampled.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 import com.graphics.flappybird.services.IAudioService;
 
 /**
@@ -43,6 +47,31 @@ public class SoundManager implements IAudioService {
     public void playGameOverSound() {
         // Descenso de 600 Hz a 300 Hz en 300 ms.
         playFrequencySweep(600, 300, 300);
+    }
+
+    /**
+     * Reproduce sonido de tensión/velocidad (barrido ascendente).
+     * Hace que parezca que el juego va rápido.
+     * Frecuencia: 400 Hz → 800 Hz en 150 ms.
+     */
+    public void playTensionSound() {
+        playFrequencySweep(400, 800, 150);
+    }
+
+    /**
+     * Alerta rápida de peligro/velocidad máxima.
+     * Dos tonos cortos y agudos (1000 Hz).
+     */
+    public void playSpeedWarning() {
+        executor.execute(() -> {
+            playTone(1000, 100);
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            playTone(1000, 100);
+        });
     }
 
     /**
