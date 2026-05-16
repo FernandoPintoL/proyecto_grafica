@@ -16,6 +16,11 @@ public interface IAudioService {
     void playPointSound();
 
     /**
+     * Reproduce el sonido de colisión (pájaro golpeado).
+     */
+    void playCollisionSound();
+
+    /**
      * Reproduce el sonido de fin del juego (barrido de frecuencia).
      */
     void playGameOverSound();
@@ -31,4 +36,15 @@ public interface IAudioService {
      * Indica que el juego está en velocidad máxima.
      */
     void playSpeedWarning();
+
+    /**
+     * Inicia música de fondo sintetizada (loop continuo).
+     * Se ejecuta en thread separado para no bloquear el juego.
+     */
+    void playBackgroundMusic();
+
+    /**
+     * Detiene la música de fondo.
+     */
+    void stopBackgroundMusic();
 }

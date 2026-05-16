@@ -102,12 +102,14 @@ public class Game {
         bird1.update(deltaTime);
         bird2.update(deltaTime);
 
-        // Efecto de partículas cuando un pájaro muere.
+        // Efecto de partículas y sonido cuando un pájaro muere.
         if (bird1WasAlive && !bird1.alive) {
             ServiceLocator.particles().burst(bird1.x, bird1.y, bird1.colorR, bird1.colorG, bird1.colorB, 15);
+            ServiceLocator.audio().playCollisionSound();
         }
         if (bird2WasAlive && !bird2.alive) {
             ServiceLocator.particles().burst(bird2.x, bird2.y, bird2.colorR, bird2.colorG, bird2.colorB, 15);
+            ServiceLocator.audio().playCollisionSound();
         }
 
         // Actualizar dificultad según puntaje máximo.

@@ -1,3 +1,4 @@
+com\graphics\flappybird\rendering\ColorPalette.class
 com\graphics\flappybird\services\IParticleService.class
 com\graphics\flappybird\core\Pipe.class
 com\graphics\flappybird\effects\ParticleSystem$Particle.class
