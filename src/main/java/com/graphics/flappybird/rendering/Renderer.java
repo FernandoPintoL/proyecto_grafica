@@ -295,38 +295,87 @@ public class Renderer {
     }
 
     /**
-     * Fondo con degradado suave (gradientes).
+     * Fondo mejorado con degradado profesional, montañas y paralaje.
      */
     private void drawBackgroundGradient() {
-        // Cielo superior (azul claro).
-        drawRect(0.0f, 0.5f, 2.0f, 1.0f, 0.60f, 0.85f, 0.98f);
-        // Cielo inferior (mÃ¡s oscuro).
-        drawRect(0.0f, 0.0f, 2.0f, 0.5f, 0.52f, 0.80f, 0.92f);
-        // Suelo (verde oscuro).
-        drawRect(0.0f, -0.65f, 2.0f, 0.65f, 0.34f, 0.52f, 0.20f);
-        // LÃ­nea de suelo.
-        drawRect(0.0f, -0.7f, 2.0f, 0.05f, 0.2f, 0.35f, 0.1f);
+        // ===== CIELO CON DEGRADADO SUAVE =====
+        // Capa superior: Azul más claro (horizonte)
+        drawRect(0.0f, 0.75f, 2.0f, 0.5f, 0.68f, 0.88f, 0.99f);
+        // Capa media: Azul degradado
+        drawRect(0.0f, 0.45f, 2.0f, 0.3f, 0.58f, 0.82f, 0.95f);
+        // Capa inferior: Azul más cálido (atardecer suave)
+        drawRect(0.0f, 0.15f, 2.0f, 0.3f, 0.62f, 0.80f, 0.88f);
+
+        // ===== MONTAÑAS EN EL FONDO (Parallax capa 1) =====
+        // Montaña lejana izquierda (muy translúcida, ve el cielo atrás)
+        float mountOffset1 = (tiempoGlobal * 0.02f) % 2.0f;
+        drawTriangleAlpha(-0.8f + mountOffset1, 0.15f,
+                         -0.3f + mountOffset1, 0.5f,
+                         0.2f + mountOffset1, 0.15f,
+                         0.45f, 0.60f, 0.35f, 0.3f);
+
+        // Montaña lejana derecha
+        drawTriangleAlpha(0.7f + mountOffset1, 0.15f,
+                         1.2f + mountOffset1, 0.45f,
+                         1.7f + mountOffset1, 0.15f,
+                         0.50f, 0.62f, 0.38f, 0.3f);
+
+        // ===== MONTAÑAS MÁS CERCANAS (Parallax capa 2) =====
+        float mountOffset2 = (tiempoGlobal * 0.035f) % 2.5f;
+        drawTriangleAlpha(-1.0f + mountOffset2, 0.05f,
+                         -0.4f + mountOffset2, 0.35f,
+                         0.2f + mountOffset2, 0.05f,
+                         0.40f, 0.55f, 0.30f, 0.4f);
+
+        drawTriangleAlpha(0.5f + mountOffset2, 0.05f,
+                         1.1f + mountOffset2, 0.40f,
+                         1.7f + mountOffset2, 0.05f,
+                         0.42f, 0.57f, 0.32f, 0.4f);
+
+        // ===== SUELO HERBOSO =====
+        // Capa de hierba superior (verde claro)
+        drawRect(0.0f, -0.58f, 2.0f, 0.08f, 0.40f, 0.65f, 0.25f);
+        // Suelo principal (verde oscuro)
+        drawRect(0.0f, -0.75f, 2.0f, 0.17f, 0.30f, 0.50f, 0.18f);
+        // Línea de suelo oscura (sombra)
+        drawRect(0.0f, -0.73f, 2.0f, 0.03f, 0.18f, 0.30f, 0.08f);
+
+        // ===== DETALLES DE HIERBA =====
+        // Líneas de hierba (detalles)
+        drawRectAlpha(-0.8f, -0.58f, 0.15f, 0.02f, 0.35f, 0.58f, 0.20f, 0.5f);
+        drawRectAlpha(-0.3f, -0.58f, 0.12f, 0.02f, 0.35f, 0.58f, 0.20f, 0.5f);
+        drawRectAlpha(0.2f, -0.58f, 0.14f, 0.02f, 0.35f, 0.58f, 0.20f, 0.5f);
+        drawRectAlpha(0.7f, -0.58f, 0.13f, 0.02f, 0.35f, 0.58f, 0.20f, 0.5f);
     }
 
     /**
-     * Nubes animadas que se mueven lentamente.
+     * Nubes mejoradas con formas más realistas y animación suave.
      */
     private void drawAnimatedClouds() {
-        float cloudOffset = (tiempoGlobal * 0.05f) % 2.0f; // Se repite cada 2 unidades.
+        float cloudOffset = (tiempoGlobal * 0.03f) % 3.0f; // Movimiento lento y continuo
 
-        // Nube 1.
-        float cloud1X = -0.6f + cloudOffset;
-        drawRect(cloud1X, 0.7f, 0.3f, 0.15f, 0.95f, 0.95f, 0.95f);
-        drawRect(cloud1X - 0.1f, 0.75f, 0.15f, 0.1f, 0.98f, 0.98f, 0.98f);
-        drawRect(cloud1X + 0.2f, 0.73f, 0.12f, 0.08f, 0.93f, 0.93f, 0.93f);
+        // ===== NUBE 1: Grande y esponjosa (arriba) =====
+        float cloud1X = -1.2f + cloudOffset;
+        // Partes de la nube (círculos conectados)
+        drawCircleAlpha(cloud1X - 0.15f, 0.72f, 0.12f, 0.08f, 12, 0.96f, 0.96f, 0.96f, 0.85f);
+        drawCircleAlpha(cloud1X + 0.0f, 0.75f, 0.14f, 0.09f, 12, 0.98f, 0.98f, 0.98f, 0.9f);
+        drawCircleAlpha(cloud1X + 0.15f, 0.72f, 0.12f, 0.08f, 12, 0.96f, 0.96f, 0.96f, 0.85f);
 
-        // Nube 2 (mÃ¡s lejana).
-        float cloud2X = 0.3f + cloudOffset * 0.6f;
-        drawRectAlpha(cloud2X, 0.6f, 0.35f, 0.12f, 0.9f, 0.9f, 0.9f, 0.6f);
+        // ===== NUBE 2: Mediana (parallax medio) =====
+        float cloud2X = -0.5f + cloudOffset * 0.65f;
+        drawCircleAlpha(cloud2X - 0.1f, 0.55f, 0.09f, 0.06f, 10, 0.94f, 0.94f, 0.94f, 0.7f);
+        drawCircleAlpha(cloud2X + 0.05f, 0.58f, 0.10f, 0.07f, 10, 0.96f, 0.96f, 0.96f, 0.75f);
+        drawCircleAlpha(cloud2X + 0.18f, 0.55f, 0.08f, 0.06f, 10, 0.93f, 0.93f, 0.93f, 0.68f);
 
-        // Nube 3 (pequeÃ±a).
-        float cloud3X = 0.8f - cloudOffset * 0.8f;
-        drawRectAlpha(cloud3X, 0.8f, 0.2f, 0.08f, 0.92f, 0.92f, 0.92f, 0.5f);
+        // ===== NUBE 3: Pequeña y ligera (paralax rápido) =====
+        float cloud3X = 0.6f - cloudOffset * 0.8f;
+        drawCircleAlpha(cloud3X, 0.78f, 0.07f, 0.05f, 10, 0.92f, 0.92f, 0.92f, 0.6f);
+        drawCircleAlpha(cloud3X + 0.1f, 0.80f, 0.08f, 0.05f, 10, 0.94f, 0.94f, 0.94f, 0.65f);
+
+        // ===== NUBE 4: Lejana y semi-transparente =====
+        float cloud4X = 1.0f + cloudOffset * 0.4f;
+        drawCircleAlpha(cloud4X - 0.08f, 0.68f, 0.10f, 0.06f, 10, 0.90f, 0.90f, 0.90f, 0.4f);
+        drawCircleAlpha(cloud4X + 0.08f, 0.68f, 0.10f, 0.06f, 10, 0.90f, 0.90f, 0.90f, 0.35f);
     }
 
     /**
