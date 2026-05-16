@@ -160,9 +160,9 @@ public class Renderer {
         drawBirdShadow(game.bird1);
         drawBirdShadow(game.bird2);
 
-        // PÃ¡jaros mejorados.
-        drawBirdEnhanced(game.bird1);
-        drawBirdEnhanced(game.bird2);
+        // PÃ¡jaros geomÃ©tricos (figuras complejas).
+        drawBirdGeometric(game.bird1);
+        drawBirdGeometric(game.bird2);
 
         // PartÃ­culas (explosiones, polvo, efectos).
         ServiceLocator.particles().render(this);
@@ -187,6 +187,93 @@ public class Renderer {
      */
     public void drawRect(float x, float y, float width, float height, float r, float g, float b) {
         drawRectAlpha(x, y, width, height, r, g, b, 1.0f);
+    }
+
+    /**
+     * Dibuja un círculo usando triangle fan.
+     * @param centerX Centro X
+     * @param centerY Centro Y
+     * @param radiusX Radio en eje X
+     * @param radiusY Radio en eje Y (para óvalos)
+     * @param segments Número de segmentos (más = más suave)
+     * @param r, g, b Color RGB
+     */
+    public void drawCircle(float centerX, float centerY, float radiusX, float radiusY,
+                          int segments, float r, float g, float b) {
+        drawCircleAlpha(centerX, centerY, radiusX, radiusY, segments, r, g, b, 1.0f);
+    }
+
+    /**
+     * Dibuja un círculo con transparencia.
+     */
+    public void drawCircleAlpha(float centerX, float centerY, float radiusX, float radiusY,
+                               int segments, float r, float g, float b, float alpha) {
+        float[] vertices = new float[(segments + 2) * 3];
+        vertices[0] = centerX;
+        vertices[1] = centerY;
+        vertices[2] = 0.0f;
+
+        for (int i = 0; i <= segments; i++) {
+            float angle = (float) (2.0f * Math.PI * i / segments);
+            float x = centerX + (float) Math.cos(angle) * radiusX;
+            float y = centerY + (float) Math.sin(angle) * radiusY;
+            vertices[(i + 1) * 3] = x;
+            vertices[(i + 1) * 3 + 1] = y;
+            vertices[(i + 1) * 3 + 2] = 0.0f;
+        }
+
+        drawCustomGeometry(vertices, GL11.GL_TRIANGLE_FAN, r, g, b, alpha);
+    }
+
+    /**
+     * Dibuja un triángulo dado tres puntos.
+     */
+    public void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3,
+                            float r, float g, float b) {
+        drawTriangleAlpha(x1, y1, x2, y2, x3, y3, r, g, b, 1.0f);
+    }
+
+    /**
+     * Dibuja un triángulo con transparencia.
+     */
+    public void drawTriangleAlpha(float x1, float y1, float x2, float y2, float x3, float y3,
+                                 float r, float g, float b, float alpha) {
+        float[] vertices = {
+            x1, y1, 0.0f,
+            x2, y2, 0.0f,
+            x3, y3, 0.0f
+        };
+        drawCustomGeometry(vertices, GL11.GL_TRIANGLES, r, g, b, alpha);
+    }
+
+    /**
+     * Dibuja geometría personalizada usando vértices personalizados.
+     */
+    private void drawCustomGeometry(float[] vertices, int mode, float r, float g, float b, float alpha) {
+        int customVAO = GL30.glGenVertexArrays();
+        GL30.glBindVertexArray(customVAO);
+
+        int customVBO = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, customVBO);
+
+        FloatBuffer buffer = BufferUtils.createFloatBuffer(vertices.length);
+        buffer.put(vertices).flip();
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
+
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 3 * Float.BYTES, 0);
+        GL20.glEnableVertexAttribArray(0);
+
+        GL20.glUniform3f(uColorLocation, r, g, b);
+        GL20.glUniform1f(uAlphaLocation, alpha);
+        GL20.glUniform2f(uOffsetLocation, 0, 0);
+        GL20.glUniform2f(uScaleLocation, 1, 1);
+
+        GL11.glDrawArrays(mode, 0, vertices.length / 3);
+
+        GL15.glDeleteBuffers(customVBO);
+        GL30.glDeleteVertexArrays(customVAO);
+
+        GL30.glBindVertexArray(vao);
     }
 
     /**
@@ -316,6 +403,91 @@ public class Renderer {
         // Contorno del ojo (blanco).
         drawRectAlpha(eyeX, eyeY, bird.width * 0.11f, bird.height * 0.16f,
                       1.0f, 1.0f, 1.0f, 0.5f);
+    }
+
+    /**
+     * PÃ¡jaro geomÃ©trico: compuesto por figuras (cÃ­rculo, triÃ¡ngulos, etc.)
+     * Cumple requerimiento de examen: pÃ¡jaro con pico, alas, cola y ojo.
+     * Componentes:
+     * - Cuerpo: óvalo/círculo
+     * - Pico: triángulo naranja
+     * - Alas: triángulos animados
+     * - Cola: rectángulo + pluma distintiva
+     * - Ojo: círculo blanco con iris negro y pupila brillante
+     */
+    public void drawBirdGeometric(Bird bird) {
+        if (!bird.alive) return;
+
+        float wingFlap = (float) Math.sin(tiempoGlobal * 8.0f);
+        float tailWag = (float) Math.sin(tiempoGlobal * 6.0f) * 0.15f;
+
+        float bodyRadiusX = bird.width * 0.35f;
+        float bodyRadiusY = bird.height * 0.4f;
+        drawCircleAlpha(bird.x, bird.y, bodyRadiusX, bodyRadiusY, 20,
+                       bird.colorR, bird.colorG, bird.colorB, 1.0f);
+
+        drawCircleAlpha(bird.x + bodyRadiusX * 0.3f, bird.y - bodyRadiusY * 0.1f,
+                       bodyRadiusX * 0.2f, bodyRadiusY * 0.2f, 12,
+                       bird.colorR * 0.5f, bird.colorG * 0.5f, bird.colorB * 0.5f, 0.4f);
+
+        float peakTipX = bird.x + bird.width * 0.38f;
+        float peakTipY = bird.y + bird.height * 0.08f;
+        float peakBaseX1 = bird.x + bird.width * 0.15f;
+        float peakBaseY1 = bird.y + bird.height * 0.15f;
+        float peakBaseX2 = bird.x + bird.width * 0.15f;
+        float peakBaseY2 = bird.y - bird.height * 0.08f;
+        drawTriangleAlpha(peakTipX, peakTipY, peakBaseX1, peakBaseY1, peakBaseX2, peakBaseY2,
+                         1.0f, 0.85f, 0.1f, 1.0f);
+
+        float wingX1 = bird.x - bird.width * 0.28f;
+        float wingY1 = bird.y + bird.height * 0.3f + wingFlap * 0.1f;
+        float wingX2 = bird.x - bird.width * 0.1f;
+        float wingY2 = bird.y + bird.height * 0.5f;
+        float wingX3 = bird.x - bird.width * 0.05f;
+        float wingY3 = bird.y + bird.height * 0.25f;
+        drawTriangleAlpha(wingX1, wingY1, wingX2, wingY2, wingX3, wingY3,
+                         bird.colorR * 0.6f, bird.colorG * 0.6f, bird.colorB * 0.6f, 0.85f);
+
+        float wing2X1 = bird.x - bird.width * 0.25f;
+        float wing2Y1 = bird.y - bird.height * 0.25f - wingFlap * 0.08f;
+        float wing2X2 = bird.x - bird.width * 0.08f;
+        float wing2Y2 = bird.y - bird.height * 0.4f;
+        float wing2X3 = bird.x - bird.width * 0.02f;
+        float wing2Y3 = bird.y - bird.height * 0.15f;
+        drawTriangleAlpha(wing2X1, wing2Y1, wing2X2, wing2Y2, wing2X3, wing2Y3,
+                         bird.colorR * 0.5f, bird.colorG * 0.5f, bird.colorB * 0.5f, 0.75f);
+
+        float tailX = bird.x - bird.width * 0.45f + tailWag;
+        float tailY = bird.y - bird.height * 0.15f;
+        drawRectAlpha(tailX, tailY, bird.width * 0.12f, bird.height * 0.5f,
+                     bird.colorR * 0.4f, bird.colorG * 0.4f, bird.colorB * 0.4f, 0.6f);
+
+        float featherX1 = bird.x - bird.width * 0.5f;
+        float featherY1 = bird.y - bird.height * 0.35f + tailWag;
+        float featherX2 = bird.x - bird.width * 0.58f;
+        float featherY2 = bird.y - bird.height * 0.28f;
+        float featherX3 = bird.x - bird.width * 0.45f;
+        float featherY3 = bird.y - bird.height * 0.48f + tailWag;
+        drawTriangleAlpha(featherX1, featherY1, featherX2, featherY2, featherX3, featherY3,
+                         bird.colorR * 0.3f, bird.colorG * 0.3f, bird.colorB * 0.3f, 0.7f);
+
+        float eyeX = bird.x + bird.width * 0.15f;
+        float eyeY = bird.y + bird.height * 0.15f;
+
+        drawCircleAlpha(eyeX, eyeY, bird.width * 0.065f, bird.height * 0.1f, 16,
+                       1.0f, 1.0f, 1.0f, 1.0f);
+
+        drawCircleAlpha(eyeX + bird.width * 0.015f, eyeY, bird.width * 0.035f, bird.height * 0.065f, 14,
+                       0.05f, 0.05f, 0.05f, 1.0f);
+
+        drawCircleAlpha(eyeX + bird.width * 0.025f, eyeY + bird.height * 0.025f,
+                       bird.width * 0.015f, bird.height * 0.025f, 8,
+                       1.0f, 1.0f, 1.0f, 0.9f);
+
+        drawTriangleAlpha(eyeX - bird.width * 0.065f, eyeY + bird.height * 0.105f,
+                         eyeX + bird.width * 0.065f, eyeY + bird.height * 0.105f,
+                         eyeX, eyeY + bird.height * 0.115f,
+                         bird.colorR * 0.3f, bird.colorG * 0.3f, bird.colorB * 0.3f, 0.5f);
     }
 
     /**
