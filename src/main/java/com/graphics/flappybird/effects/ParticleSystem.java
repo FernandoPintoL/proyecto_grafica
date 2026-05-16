@@ -1,15 +1,18 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.effects;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import com.graphics.flappybird.services.IParticleService;
+import com.graphics.flappybird.rendering.Renderer;
 
 /**
- * ParticleSystem: genera efectos visuales con partículas.
+ * ParticleSystem: genera efectos visuales con partÃ­culas.
  * Usado para explosiones, polvo, trail de movimiento.
+ * Implementa IParticleService para ser usado a travÃ©s del Service Locator.
  */
-public class ParticleSystem {
+public class ParticleSystem implements IParticleService {
     private List<Particle> particles;
     private Random random;
 
@@ -19,7 +22,7 @@ public class ParticleSystem {
     }
 
     /**
-     * Partícula individual: posición, velocidad, tiempo de vida, color.
+     * PartÃ­cula individual: posiciÃ³n, velocidad, tiempo de vida, color.
      */
     private static class Particle {
         float x, y;
@@ -50,7 +53,7 @@ public class ParticleSystem {
             y += velY * deltaTime;
 
             // Desvanecimiento.
-            life -= deltaTime * 2.0f; // Muere rápido.
+            life -= deltaTime * 2.0f; // Muere rÃ¡pido.
             if (life < 0.0f) life = 0.0f;
         }
 
@@ -60,8 +63,9 @@ public class ParticleSystem {
     }
 
     /**
-     * Crea explosión en una posición (cuando el pájaro muere).
+     * Crea explosiÃ³n en una posiciÃ³n (cuando el pÃ¡jaro muere).
      */
+    @Override
     public void burst(float x, float y, float r, float g, float b, int count) {
         for (int i = 0; i < count; i++) {
             float angle = random.nextFloat() * (float) (2 * Math.PI);
@@ -78,8 +82,9 @@ public class ParticleSystem {
     }
 
     /**
-     * Crea trail de polvo (cuando el pájaro salta).
+     * Crea trail de polvo (cuando el pÃ¡jaro salta).
      */
+    @Override
     public void jumpDust(float x, float y) {
         for (int i = 0; i < 5; i++) {
             float angle = (float) Math.PI * (0.5f + random.nextFloat() * 0.5f); // Hacia arriba.
@@ -93,10 +98,11 @@ public class ParticleSystem {
     }
 
     /**
-     * Crea puntos flotantes cuando el pájaro pasa una tubería.
+     * Crea puntos flotantes cuando el pÃ¡jaro pasa una tuberÃ­a.
      */
+    @Override
     public void scorePopup(float x, float y) {
-        // Partículas que flotan hacia arriba.
+        // PartÃ­culas que flotan hacia arriba.
         for (int i = 0; i < 8; i++) {
             float angle = random.nextFloat() * (float) (2 * Math.PI);
             float speed = 0.2f + random.nextFloat() * 0.3f;
@@ -109,8 +115,9 @@ public class ParticleSystem {
     }
 
     /**
-     * Actualiza todas las partículas.
+     * Actualiza todas las partÃ­culas.
      */
+    @Override
     public void update(float deltaTime) {
         Iterator<Particle> it = particles.iterator();
         while (it.hasNext()) {
@@ -123,19 +130,21 @@ public class ParticleSystem {
     }
 
     /**
-     * Renderiza todas las partículas. (Llamado por Renderer)
+     * Renderiza todas las partÃ­culas. (Llamado por Renderer)
      */
+    @Override
     public void render(Renderer renderer) {
         for (Particle p : particles) {
-            // Alfa (transparencia) según vida.
+            // Alfa (transparencia) segÃºn vida.
             float alpha = p.life / p.maxLife;
             renderer.drawParticle(p.x, p.y, p.size, p.r, p.g, p.b, alpha);
         }
     }
 
     /**
-     * Retorna cantidad de partículas activas.
+     * Retorna cantidad de partÃ­culas activas.
      */
+    @Override
     public int getActiveCount() {
         return particles.size();
     }

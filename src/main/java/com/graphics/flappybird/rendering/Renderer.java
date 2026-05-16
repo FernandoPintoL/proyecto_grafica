@@ -1,4 +1,4 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.rendering;
 
 import java.nio.FloatBuffer;
 
@@ -7,11 +7,15 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import com.graphics.flappybird.core.Game;
+import com.graphics.flappybird.core.Bird;
+import com.graphics.flappybird.core.Pipe;
+import com.graphics.flappybird.services.ServiceLocator;
 
 /**
- * Renderer: maneja todo el renderizado gráfico con mejoras visuales.
- * - Fondo, pájaros, tuberías, HUD, partículas.
- * - Soporta transparencia y animación.
+ * Renderer: maneja todo el renderizado grÃ¡fico con mejoras visuales.
+ * - Fondo, pÃ¡jaros, tuberÃ­as, HUD, partÃ­culas.
+ * - Soporta transparencia y animaciÃ³n.
  */
 public class Renderer {
     private int programa;
@@ -24,11 +28,8 @@ public class Renderer {
     private int uColorLocation;
     private int uAlphaLocation;
 
-    // Para animación de tiempo.
+    // Para animaciÃ³n de tiempo.
     private float tiempoGlobal = 0.0f;
-
-    // Sistema de texto - TextureFont con bitmap mejorado
-    private TextureFont font;
 
     // Quad unitario centrado en [-0.5, 0.5] x [-0.5, 0.5].
     private static final float[] QUAD_VERTICES = {
@@ -43,7 +44,8 @@ public class Renderer {
     public Renderer() {
         crearShaders();
         crearQuad();
-        font = new TextureFont();
+        // Registrar el servicio de fuente de texto en el Service Locator
+        ServiceLocator.provideFont(new TextureFont());
     }
 
     /**
@@ -133,7 +135,7 @@ public class Renderer {
     /**
      * Renderiza el frame completo del juego.
      */
-    public void render(Game game, ParticleSystem particles, int windowWidth, int windowHeight) {
+    public void render(Game game, int windowWidth, int windowHeight) {
         tiempoGlobal += 0.016f; // ~60 FPS.
 
         // Limpiar con color de cielo.
@@ -149,21 +151,21 @@ public class Renderer {
         // Nubes animadas.
         drawAnimatedClouds();
 
-        // Tuberías.
+        // TuberÃ­as.
         for (Pipe p : game.pipes) {
             drawPipe(p);
         }
 
-        // Sombras de pájaros (debajo).
+        // Sombras de pÃ¡jaros (debajo).
         drawBirdShadow(game.bird1);
         drawBirdShadow(game.bird2);
 
-        // Pájaros mejorados.
+        // PÃ¡jaros mejorados.
         drawBirdEnhanced(game.bird1);
         drawBirdEnhanced(game.bird2);
 
-        // Partículas (explosiones, polvo, efectos).
-        particles.render(this);
+        // PartÃ­culas (explosiones, polvo, efectos).
+        ServiceLocator.particles().render(this);
 
         // HUD.
         drawHUD(game, windowWidth, windowHeight);
@@ -174,21 +176,21 @@ public class Renderer {
             drawStartScreen(windowWidth, windowHeight);
         }
 
-        // Pantalla de game over (SOLO después de que el juego empezó y terminó).
+        // Pantalla de game over (SOLO despuÃ©s de que el juego empezÃ³ y terminÃ³).
         if (game.gameStarted && game.gameOver) {
             drawGameOverScreen(game, windowWidth, windowHeight);
         }
     }
 
     /**
-     * Dibuja un rectángulo simple con alpha (transparencia).
+     * Dibuja un rectÃ¡ngulo simple con alpha (transparencia).
      */
     public void drawRect(float x, float y, float width, float height, float r, float g, float b) {
         drawRectAlpha(x, y, width, height, r, g, b, 1.0f);
     }
 
     /**
-     * Dibuja un rectángulo con transparencia.
+     * Dibuja un rectÃ¡ngulo con transparencia.
      */
     private void drawRectAlpha(float x, float y, float width, float height, float r, float g, float b, float alpha) {
         GL20.glUniform2f(uOffsetLocation, x, y);
@@ -199,7 +201,7 @@ public class Renderer {
     }
 
     /**
-     * Dibuja una partícula (punto coloreado pequeño).
+     * Dibuja una partÃ­cula (punto coloreado pequeÃ±o).
      */
     public void drawParticle(float x, float y, float size, float r, float g, float b, float alpha) {
         drawRectAlpha(x, y, size * 2, size * 2, r, g, b, alpha);
@@ -211,11 +213,11 @@ public class Renderer {
     private void drawBackgroundGradient() {
         // Cielo superior (azul claro).
         drawRect(0.0f, 0.5f, 2.0f, 1.0f, 0.60f, 0.85f, 0.98f);
-        // Cielo inferior (más oscuro).
+        // Cielo inferior (mÃ¡s oscuro).
         drawRect(0.0f, 0.0f, 2.0f, 0.5f, 0.52f, 0.80f, 0.92f);
         // Suelo (verde oscuro).
         drawRect(0.0f, -0.65f, 2.0f, 0.65f, 0.34f, 0.52f, 0.20f);
-        // Línea de suelo.
+        // LÃ­nea de suelo.
         drawRect(0.0f, -0.7f, 2.0f, 0.05f, 0.2f, 0.35f, 0.1f);
     }
 
@@ -231,22 +233,22 @@ public class Renderer {
         drawRect(cloud1X - 0.1f, 0.75f, 0.15f, 0.1f, 0.98f, 0.98f, 0.98f);
         drawRect(cloud1X + 0.2f, 0.73f, 0.12f, 0.08f, 0.93f, 0.93f, 0.93f);
 
-        // Nube 2 (más lejana).
+        // Nube 2 (mÃ¡s lejana).
         float cloud2X = 0.3f + cloudOffset * 0.6f;
         drawRectAlpha(cloud2X, 0.6f, 0.35f, 0.12f, 0.9f, 0.9f, 0.9f, 0.6f);
 
-        // Nube 3 (pequeña).
+        // Nube 3 (pequeÃ±a).
         float cloud3X = 0.8f - cloudOffset * 0.8f;
         drawRectAlpha(cloud3X, 0.8f, 0.2f, 0.08f, 0.92f, 0.92f, 0.92f, 0.5f);
     }
 
     /**
-     * Sombra debajo del pájaro (efecto de profundidad).
+     * Sombra debajo del pÃ¡jaro (efecto de profundidad).
      */
     private void drawBirdShadow(Bird bird) {
         if (!bird.alive) return;
         float shadowX = bird.x;
-        float shadowY = bird.y - bird.height * 0.6f; // Abajo del pájaro.
+        float shadowY = bird.y - bird.height * 0.6f; // Abajo del pÃ¡jaro.
         float shadowWidth = bird.width * 0.6f;
         float shadowHeight = bird.height * 0.15f;
         drawRectAlpha(shadowX, shadowY, shadowWidth, shadowHeight,
@@ -254,7 +256,7 @@ public class Renderer {
     }
 
     /**
-     * Pájaro mejorado con más detalles y animación.
+     * PÃ¡jaro mejorado con mÃ¡s detalles y animaciÃ³n.
      */
     private void drawBirdEnhanced(Bird bird) {
         if (!bird.alive) {
@@ -262,9 +264,9 @@ public class Renderer {
         }
 
         float rotation = bird.getRotationAngle();
-        float wingFlap = (float) Math.sin(tiempoGlobal * 8.0f) * 0.3f; // Animación de alas.
+        float wingFlap = (float) Math.sin(tiempoGlobal * 8.0f) * 0.3f; // AnimaciÃ³n de alas.
 
-        // CUERPO: rectángulo principal con sombreado.
+        // CUERPO: rectÃ¡ngulo principal con sombreado.
         drawRect(bird.x, bird.y, bird.width, bird.height,
                  bird.colorR, bird.colorG, bird.colorB);
 
@@ -273,7 +275,7 @@ public class Renderer {
                       bird.width * 0.3f, bird.height * 0.3f,
                       bird.colorR * 0.5f, bird.colorG * 0.5f, bird.colorB * 0.5f, 0.3f);
 
-        // PICO: triángulo (rectángulo aproximado).
+        // PICO: triÃ¡ngulo (rectÃ¡ngulo aproximado).
         float peakX = bird.x + bird.width * 0.35f;
         float peakY = bird.y + bird.height * 0.05f;
         drawRect(peakX, peakY, bird.width * 0.22f, bird.height * 0.35f,
@@ -292,13 +294,13 @@ public class Renderer {
                  bird.height * 0.22f,
                  bird.colorR * 0.6f, bird.colorG * 0.6f, bird.colorB * 0.6f);
 
-        // COLA: rectángulo trasero con fade.
+        // COLA: rectÃ¡ngulo trasero con fade.
         float tailX = bird.x - bird.width * 0.4f;
         float tailY = bird.y - bird.height * 0.25f;
         drawRectAlpha(tailX, tailY, bird.width * 0.15f, bird.height * 0.4f,
                       bird.colorR * 0.4f, bird.colorG * 0.4f, bird.colorB * 0.4f, 0.7f);
 
-        // OJO: círculo blanco con pupila.
+        // OJO: cÃ­rculo blanco con pupila.
         float eyeX = bird.x + bird.width * 0.18f;
         float eyeY = bird.y + bird.height * 0.12f;
 
@@ -317,7 +319,7 @@ public class Renderer {
     }
 
     /**
-     * Dibuja una tubería (superior + inferior).
+     * Dibuja una tuberÃ­a (superior + inferior).
      */
     private void drawPipe(Pipe p) {
         float gapTop = p.gapCentroY + (p.gapHeight * 0.5f);
@@ -339,44 +341,44 @@ public class Renderer {
     }
 
     /**
-     * Dibuja un pájaro compuesto:
-     * - Cuerpo (rectángulo)
-     * - Pico (triángulo)
-     * - Ala (rectángulo pequeño)
-     * - Cola (rectángulo)
+     * Dibuja un pÃ¡jaro compuesto:
+     * - Cuerpo (rectÃ¡ngulo)
+     * - Pico (triÃ¡ngulo)
+     * - Ala (rectÃ¡ngulo pequeÃ±o)
+     * - Cola (rectÃ¡ngulo)
      * - Ojo (punto).
      */
     private void drawBird(Bird bird) {
         if (!bird.alive) {
-            return; // No dibujar pájaros muertos.
+            return; // No dibujar pÃ¡jaros muertos.
         }
 
-        float rotation = bird.getRotationAngle(); // Para animar inclinación.
+        float rotation = bird.getRotationAngle(); // Para animar inclinaciÃ³n.
 
-        // Cuerpo: rectángulo principal.
+        // Cuerpo: rectÃ¡ngulo principal.
         drawRect(bird.x, bird.y, bird.width, bird.height,
                  bird.colorR, bird.colorG, bird.colorB);
 
-        // Pico: triángulo (aprox con pequeños rectángulos).
+        // Pico: triÃ¡ngulo (aprox con pequeÃ±os rectÃ¡ngulos).
         float peakX = bird.x + bird.width * 0.3f;
         float peakY = bird.y;
         drawRect(peakX, peakY, bird.width * 0.2f, bird.height * 0.3f,
                  1.0f, 0.85f, 0.0f); // Amarillo.
 
-        // Ala: rectángulo que rota según velocidad.
+        // Ala: rectÃ¡ngulo que rota segÃºn velocidad.
         float wingX = bird.x - bird.width * 0.15f;
         float wingY = bird.y + bird.height * 0.15f;
-        float wingScale = 0.8f + (Math.abs(rotation) * 0.5f); // Escala dinámica.
+        float wingScale = 0.8f + (Math.abs(rotation) * 0.5f); // Escala dinÃ¡mica.
         drawRect(wingX, wingY, bird.width * 0.4f * wingScale, bird.height * 0.25f,
                  bird.colorR * 0.7f, bird.colorG * 0.7f, bird.colorB * 0.7f);
 
-        // Cola: rectángulo pequeño atrás.
+        // Cola: rectÃ¡ngulo pequeÃ±o atrÃ¡s.
         float tailX = bird.x - bird.width * 0.35f;
         float tailY = bird.y - bird.height * 0.2f;
         drawRect(tailX, tailY, bird.width * 0.15f, bird.height * 0.35f,
                  bird.colorR * 0.5f, bird.colorG * 0.5f, bird.colorB * 0.5f);
 
-        // Ojo: punto blanco muy pequeño.
+        // Ojo: punto blanco muy pequeÃ±o.
         float eyeX = bird.x + bird.width * 0.15f;
         float eyeY = bird.y + bird.height * 0.1f;
         drawRect(eyeX, eyeY, bird.width * 0.08f, bird.height * 0.12f,
@@ -384,7 +386,7 @@ public class Renderer {
     }
 
     /**
-     * HUD: paneles con números grandes legibles.
+     * HUD: paneles con nÃºmeros grandes legibles.
      */
     private void drawHUD(Game game, int windowWidth, int windowHeight) {
         // PRIMERO: Todos los paneles (fondos)
@@ -392,79 +394,79 @@ public class Renderer {
         drawRectAlpha(0.77f, 0.88f, 0.18f, 0.08f, 0.20f, 0.85f, 0.98f, 0.85f);
         drawRectAlpha(-0.12f, 0.88f, 0.24f, 0.08f, 0.6f, 0.6f, 0.2f, 0.75f);
 
-        // DESPUÉS: Todos los números (enfrente de los paneles)
-        font.renderNumber(game.bird1.score, -0.94f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
-        font.renderNumber(game.bird2.score, 0.78f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
+        // DESPUÃ‰S: Todos los nÃºmeros (enfrente de los paneles)
+        ServiceLocator.font().renderNumber(game.bird1.score, -0.94f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderNumber(game.bird2.score, 0.78f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
         int diffLevel = Math.round(game.getDifficultyMultiplier() * 10) / 10;
-        font.renderNumber(diffLevel, -0.09f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderNumber(diffLevel, -0.09f, 0.85f, 0.25f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
      * Pantalla de inicio con instrucciones claras.
      */
     private void drawStartScreen(int windowWidth, int windowHeight) {
-        // Reactivar el programa y VAO (puede estar desactivado después de font.renderText)
+        // Reactivar el programa y VAO (puede estar desactivado despuÃ©s de font.renderText)
         GL20.glUseProgram(programa);
         GL30.glBindVertexArray(vao);
 
         // Fondo oscuro semi-transparente
         drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, 0.1f, 0.1f, 0.15f, 0.8f);
 
-        // TÍTULO
+        // TÃTULO
         // drawRectAlpha(-0.5f, 0.65f, 1.0f, 0.15f, 0.2f, 0.2f, 0.3f, 0.9f);
-        font.renderText("FLAPPY BIRD 2P", -0.42f, 0.66f, 0.09f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("FLAPPY BIRD 2P", -0.42f, 0.66f, 0.09f, 1.0f, 1.0f, 1.0f);
 
         // CONTROLES - P1
         // drawRectAlpha(-0.75f, 0.40f, 0.45f, 0.15f, 0.98f, 0.85f, 0.20f, 0.85f);
-        font.renderText("PLAYER 1", -0.73f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
-        font.renderText("PRESS W", -0.73f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
+        ServiceLocator.font().renderText("PLAYER 1", -0.73f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("PRESS W", -0.73f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
 
         // CONTROLES - P2
         // drawRectAlpha(0.30f, 0.40f, 0.45f, 0.15f, 0.20f, 0.85f, 0.98f, 0.85f);
-        font.renderText("PLAYER 2", 0.32f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
-        font.renderText("PRESS SPACE", 0.32f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
+        ServiceLocator.font().renderText("PLAYER 2", 0.32f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("PRESS SPACE", 0.32f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
 
-        // INSTRUCCIÓN PARA COMENZAR
+        // INSTRUCCIÃ“N PARA COMENZAR
         // drawRectAlpha(-0.5f, 0.18f, 1.0f, 0.12f, 0.7f, 0.6f, 0.2f, 0.8f);
-        font.renderText("TAP TO START THE GAME", -0.45f, 0.20f, 0.075f, 0.2f, 0.2f, 0.2f);
+        ServiceLocator.font().renderText("TAP TO START THE GAME", -0.45f, 0.20f, 0.075f, 0.2f, 0.2f, 0.2f);
 
         // OBJETIVO DEL JUEGO
         // drawRectAlpha(-0.5f, -0.05f, 1.0f, 0.15f, 1.2f, 1.5f, 1.8f, 0.75f);
-        font.renderText("GOAL: AVOID PIPES", -0.48f, 0.02f, 0.07f, 1.0f, 1.0f, 1.0f);
-        font.renderText("SURVIVE AS LONG AS YOU CAN", -0.48f, -0.04f, 0.06f, 0.9f, 0.9f, 0.9f);
+        ServiceLocator.font().renderText("GOAL: AVOID PIPES", -0.48f, 0.02f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("SURVIVE AS LONG AS YOU CAN", -0.48f, -0.04f, 0.06f, 0.9f, 0.9f, 0.9f);
 
         // DIFICULTAD PROGRESIVA
         // drawRectAlpha(-0.5f, -0.35f, 1.0f, 0.15f, 0.8f, 0.4f, 0.2f, 0.75f);
-        font.renderText("DIFFICULTY INCREASES", -0.48f, -0.28f, 0.07f, 1.0f, 1.0f, 1.0f);
-        font.renderText("GAIN POINTS BY PASSING GAPS", -0.48f, -0.34f, 0.06f, 0.9f, 0.9f, 0.9f);
+        ServiceLocator.font().renderText("DIFFICULTY INCREASES", -0.48f, -0.28f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("GAIN POINTS BY PASSING GAPS", -0.48f, -0.34f, 0.06f, 0.9f, 0.9f, 0.9f);
     }
 
     /**
      * Pantalla de game over con scores y ganador.
      */
     private void drawGameOverScreen(Game game, int windowWidth, int windowHeight) {
-        // Reactivar el programa y VAO (puede estar desactivado después de font.renderText)
+        // Reactivar el programa y VAO (puede estar desactivado despuÃ©s de font.renderText)
         GL20.glUseProgram(programa);
         GL30.glBindVertexArray(vao);
 
         // Panel ROJO para debug
         drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, 1.0f, 0.0f, 0.0f, 0.85f);
 
-        // Título ROJO
+        // TÃ­tulo ROJO
         // drawRectAlpha(-0.6f, 0.55f, 1.2f, 0.15f, 1.0f, 0.0f, 0.0f, 0.95f);
-        font.renderText("GAME OVER", -0.48f, 0.565f, 0.08f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("GAME OVER", -0.48f, 0.565f, 0.08f, 1.0f, 1.0f, 1.0f);
 
         // Panel P1 ROJO
         // drawRectAlpha(-0.6f, 0.30f, 0.55f, 0.2f, 1.0f, 0.0f, 0.0f, 0.85f);
-        font.renderText("P1: " + game.bird1.score, -0.55f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("P1: " + game.bird1.score, -0.55f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
 
         // Panel P2 ROJO
         // drawRectAlpha(0.05f, 0.30f, 0.55f, 0.2f, 1.0f, 0.0f, 0.0f, 0.85f);
-        font.renderText("P2: " + game.bird2.score, 0.12f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("P2: " + game.bird2.score, 0.12f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
 
         // Indicador de ganador ROJO
         // drawRectAlpha(-0.6f, 0.05f, 1.2f, 0.15f, 1.0f, 0.0f, 0.0f, 0.9f);
-        font.renderText("PRESS R TO RESTART", -0.48f, 0.075f, 0.06f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("PRESS R TO RESTART", -0.48f, 0.075f, 0.06f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
@@ -474,6 +476,6 @@ public class Renderer {
         GL30.glDeleteVertexArrays(vao);
         GL15.glDeleteBuffers(vbo);
         GL20.glDeleteProgram(programa);
-        font.cleanup();
+        ServiceLocator.font().cleanup();
     }
 }

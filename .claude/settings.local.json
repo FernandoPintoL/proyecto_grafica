@@ -7,7 +7,13 @@
       "Bash(mvn compile *)",
       "Bash(mvn exec:java -Dexec.mainClass=\"com.graphics.flappybird.FlappyBirdGame\")",
       "Bash(mvn exec:java -Dexec.mainClass=\"com.graphics.flappybird.FontGenerator\")",
-      "Bash(java -cp target/classes com.graphics.flappybird.FontGenerator)"
+      "Bash(java -cp target/classes com.graphics.flappybird.FontGenerator)",
+      "Bash(mvn exec:exec)",
+      "Bash(pkill -f \"mvn exec:exec\")",
+      "PowerShell(New-Item *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

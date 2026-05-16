@@ -1,4 +1,4 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.rendering;
 
 import java.nio.FloatBuffer;
 import org.lwjgl.BufferUtils;
@@ -6,12 +6,14 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import com.graphics.flappybird.services.IFontService;
 
 /**
  * TextureFont: renderiza texto usando una imagen bitmap de fuente.
- * Soporta letras, números, espacios y caracteres especiales.
+ * Soporta letras, nÃºmeros, espacios y caracteres especiales.
+ * Implementa IFontService para ser usado a travÃ©s del Service Locator.
  */
-public class TextureFont {
+public class TextureFont implements IFontService {
     private int textureId;
     private int vao;
     private int vbo;
@@ -107,7 +109,7 @@ public class TextureFont {
         buffer.put(vertices).flip();
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
 
-        // Posición
+        // PosiciÃ³n
         GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 5 * Float.BYTES, 0);
         GL20.glEnableVertexAttribArray(0);
 
@@ -119,6 +121,7 @@ public class TextureFont {
         GL30.glBindVertexArray(0);
     }
 
+    @Override
     public void renderText(String text, float x, float y, float size, float r, float g, float b) {
         GL20.glUseProgram(program);
         GL30.glBindVertexArray(vao);
@@ -173,10 +176,12 @@ public class TextureFont {
         GL20.glUseProgram(0);
     }
 
+    @Override
     public void renderNumber(int num, float x, float y, float size, float r, float g, float b) {
         renderText(String.valueOf(num), x, y, size, r, g, b);
     }
 
+    @Override
     public void cleanup() {
         GL30.glDeleteVertexArrays(vao);
         GL15.glDeleteBuffers(vbo);

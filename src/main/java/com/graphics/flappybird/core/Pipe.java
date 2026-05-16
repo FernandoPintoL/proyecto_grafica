@@ -1,4 +1,4 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.core;
 
 /**
  * Pipe: representa un obstáculo (tubería superior + inferior).

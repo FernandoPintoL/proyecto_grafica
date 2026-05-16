@@ -1,9 +1,11 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.core;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import com.graphics.flappybird.effects.ParticleSystem;
+import com.graphics.flappybird.services.ServiceLocator;
 
 /**
  * Game: lógica central del Flappy Bird para dos jugadores.
@@ -16,9 +18,6 @@ public class Game {
 
     // Tuberías activas.
     public List<Pipe> pipes;
-
-    // Sistema de partículas para efectos visuales.
-    public ParticleSystem particles;
 
     private Random random;
 
@@ -55,7 +54,8 @@ public class Game {
                          0.20f, 0.85f, 0.98f); // Azul
 
         pipes = new ArrayList<>();
-        particles = new ParticleSystem();
+        // Registrar el servicio de partículas en el Service Locator
+        ServiceLocator.provideParticles(new ParticleSystem());
         random = new Random();
         gameStarted = false;
         gameOver = false;
@@ -89,7 +89,7 @@ public class Game {
      */
     public void update(float deltaTime) {
         // Actualizar partículas siempre.
-        particles.update(deltaTime);
+        ServiceLocator.particles().update(deltaTime);
 
         if (!gameStarted || gameOver) {
             return;
@@ -104,10 +104,10 @@ public class Game {
 
         // Efecto de partículas cuando un pájaro muere.
         if (bird1WasAlive && !bird1.alive) {
-            particles.burst(bird1.x, bird1.y, bird1.colorR, bird1.colorG, bird1.colorB, 15);
+            ServiceLocator.particles().burst(bird1.x, bird1.y, bird1.colorR, bird1.colorG, bird1.colorB, 15);
         }
         if (bird2WasAlive && !bird2.alive) {
-            particles.burst(bird2.x, bird2.y, bird2.colorR, bird2.colorG, bird2.colorB, 15);
+            ServiceLocator.particles().burst(bird2.x, bird2.y, bird2.colorR, bird2.colorG, bird2.colorB, 15);
         }
 
         // Actualizar dificultad según puntaje máximo.
@@ -136,14 +136,14 @@ public class Game {
             if (p.x + (TUBERIA_ANCHO * 0.5f) < BIRD1_X && !p.scored) {
                 p.scored = true;
                 bird1.score++;
-                particles.scorePopup(bird1.x, bird1.y);
-                SoundManager.playPointSound();
+                ServiceLocator.particles().scorePopup(bird1.x, bird1.y);
+                ServiceLocator.audio().playPointSound();
             }
             if (p.x + (TUBERIA_ANCHO * 0.5f) < BIRD2_X && !p.scored) {
                 p.scored = true;
                 bird2.score++;
-                particles.scorePopup(bird2.x, bird2.y);
-                SoundManager.playPointSound();
+                ServiceLocator.particles().scorePopup(bird2.x, bird2.y);
+                ServiceLocator.audio().playPointSound();
             }
 
             // Colisiones.

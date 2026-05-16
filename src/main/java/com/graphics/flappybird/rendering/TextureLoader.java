@@ -1,4 +1,4 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.rendering;
 
 import java.awt.image.BufferedImage;
 import java.io.InputStream;

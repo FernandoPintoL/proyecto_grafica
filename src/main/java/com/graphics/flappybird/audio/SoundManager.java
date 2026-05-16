@@ -1,15 +1,17 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.audio;
 
 import javax.sound.sampled.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import com.graphics.flappybird.services.IAudioService;
 
 /**
- * SoundManager: genera y reproduce sonidos simples usando síntesis de tonos.
+ * SoundManager: genera y reproduce sonidos simples usando sÃ­ntesis de tonos.
  * No requiere archivos externos.
+ * Implementa IAudioService para ser usado a travÃ©s del Service Locator.
  */
-public class SoundManager {
+public class SoundManager implements IAudioService {
     private static final int SAMPLE_RATE = 44100;
     private static final float VOLUME = 0.7f;
     private static final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
@@ -21,21 +23,24 @@ public class SoundManager {
     /**
      * Reproduce un sonido simple: tono de salto (beep corto).
      */
-    public static void playJumpSound() {
+    @Override
+    public void playJumpSound() {
         playTone(800, 100); // 800 Hz por 100 ms.
     }
 
     /**
      * Reproduce sonido de punto (bip agudo).
      */
-    public static void playPointSound() {
+    @Override
+    public void playPointSound() {
         playTone(1200, 150); // 1200 Hz por 150 ms.
     }
 
     /**
      * Reproduce sonido de game over (descenso).
      */
-    public static void playGameOverSound() {
+    @Override
+    public void playGameOverSound() {
         // Descenso de 600 Hz a 300 Hz en 300 ms.
         playFrequencySweep(600, 300, 300);
     }

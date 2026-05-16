@@ -1,4 +1,4 @@
-package com.graphics.flappybird;
+package com.graphics.flappybird.core;
 
 /**
  * Bird: representa un pájaro individual en el juego.
