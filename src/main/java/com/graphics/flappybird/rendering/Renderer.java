@@ -491,25 +491,86 @@ public class Renderer {
     }
 
     /**
-     * Dibuja una tuberÃ­a (superior + inferior).
+     * Dibuja una tubería con efecto 3D: bordes, sombreado y profundidad.
      */
     private void drawPipe(Pipe p) {
         float gapTop = p.gapCentroY + (p.gapHeight * 0.5f);
         float gapBottom = p.gapCentroY - (p.gapHeight * 0.5f);
 
-        // Parte superior.
+        // Color base verde oscuro (tuberías)
+        float colorR = 0.18f;
+        float colorG = 0.70f;
+        float colorB = 0.25f;
+
+        // Bordes más oscuros y sombreado más claro
+        float darkR = colorR * 0.4f;
+        float darkG = colorG * 0.4f;
+        float darkB = colorB * 0.4f;
+
+        float lightR = colorR + 0.15f;
+        float lightG = colorG + 0.15f;
+        float lightB = colorB + 0.15f;
+
+        // ===== TUBO SUPERIOR =====
         float altoSup = 1.0f - gapTop;
         if (altoSup > 0.0f) {
             float yCentroSup = gapTop + (altoSup * 0.5f);
-            drawRect(p.x, yCentroSup, p.width, altoSup, 0.18f, 0.70f, 0.25f);
+
+            // Tubo principal (verde)
+            drawRect(p.x, yCentroSup, p.width, altoSup, colorR, colorG, colorB);
+
+            // Borde izquierdo (sombreado oscuro para profundidad)
+            float borderWidth = p.width * 0.08f;
+            drawRectAlpha(p.x - p.width * 0.5f + borderWidth * 0.5f, yCentroSup,
+                         borderWidth, altoSup, darkR, darkG, darkB, 0.6f);
+
+            // Borde derecho (más claro, efecto de luz)
+            drawRectAlpha(p.x + p.width * 0.5f - borderWidth * 0.5f, yCentroSup,
+                         borderWidth, altoSup, lightR, lightG, lightB, 0.4f);
+
+            // Borde superior (entrada del tubo, oscuro)
+            float topBorderHeight = altoSup * 0.05f;
+            float topY = gapTop + topBorderHeight * 0.5f;
+            drawRectAlpha(p.x, topY, p.width + borderWidth * 0.5f, topBorderHeight,
+                         darkR, darkG, darkB, 0.7f);
+
+            // Efecto de profundidad: línea interior oscura
+            drawRectAlpha(p.x, yCentroSup - altoSup * 0.48f, p.width * 0.7f, altoSup * 0.02f,
+                         darkR * 0.8f, darkG * 0.8f, darkB * 0.8f, 0.5f);
         }
 
-        // Parte inferior.
+        // ===== TUBO INFERIOR =====
         float altoInf = gapBottom + 1.0f;
         if (altoInf > 0.0f) {
             float yCentroInf = -1.0f + (altoInf * 0.5f);
-            drawRect(p.x, yCentroInf, p.width, altoInf, 0.18f, 0.70f, 0.25f);
+
+            // Tubo principal (verde)
+            drawRect(p.x, yCentroInf, p.width, altoInf, colorR, colorG, colorB);
+
+            // Borde izquierdo (sombreado oscuro)
+            float borderWidth = p.width * 0.08f;
+            drawRectAlpha(p.x - p.width * 0.5f + borderWidth * 0.5f, yCentroInf,
+                         borderWidth, altoInf, darkR, darkG, darkB, 0.6f);
+
+            // Borde derecho (más claro)
+            drawRectAlpha(p.x + p.width * 0.5f - borderWidth * 0.5f, yCentroInf,
+                         borderWidth, altoInf, lightR, lightG, lightB, 0.4f);
+
+            // Borde inferior (salida del tubo, oscuro)
+            float bottomBorderHeight = altoInf * 0.05f;
+            float bottomY = gapBottom - bottomBorderHeight * 0.5f;
+            drawRectAlpha(p.x, bottomY, p.width + borderWidth * 0.5f, bottomBorderHeight,
+                         darkR, darkG, darkB, 0.7f);
+
+            // Efecto de profundidad: línea interior oscura
+            drawRectAlpha(p.x, yCentroInf + altoInf * 0.48f, p.width * 0.7f, altoInf * 0.02f,
+                         darkR * 0.8f, darkG * 0.8f, darkB * 0.8f, 0.5f);
         }
+
+        // ===== GAP (Espacio entre tubos) =====
+        // Línea central invisible para marcar el límite de seguridad
+        float gapCenterLineOpacity = 0.0f; // Invisible, solo para debugging si quieres
+        // drawRectAlpha(p.x, p.gapCentroY, p.width, 0.01f, 1.0f, 0.0f, 0.0f, gapCenterLineOpacity);
     }
 
     /**
