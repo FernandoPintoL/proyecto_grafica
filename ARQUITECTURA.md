@@ -26,25 +26,113 @@ Este es un **juego Flappy Bird para 2 jugadores** escrito en Java con **OpenGL 3
 
 ---
 
-## 📁 Estructura de Carpetas
+## 📁 Estructura de Carpetas (Layered Architecture)
 
 ```
 proyecto/
 ├── src/main/java/com/graphics/flappybird/
-│   ├── FlappyBirdGame.java          ← PUNTO DE ENTRADA (main)
-│   ├── Renderer.java                ← Motor de renderizado (OpenGL)
-│   ├── Game.java                    ← Lógica del juego
-│   ├── Bird.java                    ← Lógica de cada pájaro
-│   ├── Pipe.java                    ← Lógica de tuberías
-│   ├── ParticleSystem.java          ← Sistema de partículas
-│   ├── TextureFont.java             ← Renderizado de texto con texturas
-│   ├── TextureLoader.java           ← Cargador de imágenes PNG → OpenGL
-│   ├── FontGenerator.java           ← Generador de bitmap font
-│   └── SoundManager.java            ← Síntesis de audio
+│   ├── FlappyBirdGame.java          ← PUNTO DE ENTRADA (main, orquestador)
+│   │
+│   ├── core/                        ← Lógica pura del juego (sin OpenGL)
+│   │   ├── Game.java                ← Lógica central: estados, colisiones, scoring
+│   │   ├── Bird.java                ← Física del pájaro (gravedad, salto)
+│   │   └── Pipe.java                ← Lógica de tuberías (movimiento, colisión)
+│   │
+│   ├── rendering/                   ← Todo lo visual (OpenGL, texturas, shaders)
+│   │   ├── Renderer.java            ← Motor OpenGL: renderiza juego, HUD, pantallas
+│   │   ├── TextureFont.java         ← Renderizado de texto con bitmap font
+│   │   ├── TextureLoader.java       ← Cargador de imágenes PNG → OpenGL
+│   │   └── FontGenerator.java       ← Generador offline de bitmap font
+│   │
+│   ├── effects/                     ← Sistemas de efectos visuales
+│   │   └── ParticleSystem.java      ← Partículas: polvo, explosiones, puntos
+│   │
+│   ├── audio/                       ← Sistema de sonido
+│   │   └── SoundManager.java        ← Síntesis de audio sin archivos externos
+│   │
+│   └── services/                    ← Service Locator + Interfaces
+│       ├── ServiceLocator.java      ← Registro central de dependencias
+│       ├── IAudioService.java       ← Interfaz para audio
+│       ├── IParticleService.java    ← Interfaz para partículas
+│       └── IFontService.java        ← Interfaz para renderizado de texto
+│
 ├── src/main/resources/
-│   └── font.png                     ← Imagen bitmap con todas las letras
+│   └── font.png                     ← Imagen bitmap con todas las letras (256x240)
+│
 └── pom.xml                          ← Configuración Maven
 ```
+
+### 🏛️ Principios Arquitectónicos
+
+Esta estructura sigue **Layered Architecture** (Arquitectura por Capas):
+
+```
+┌────────────────────────────────────┐
+│      FlappyBirdGame (Entrada)      │ ← Orquestador
+├────────────────────────────────────┤
+│      Rendering Layer               │ ← Visualización (OpenGL)
+├────────────────────────────────────┤
+│      Core Game Logic Layer         │ ← Lógica sin dependencias gráficas
+├────────────────────────────────────┤
+│      Services Layer                │ ← Audio, Partículas, Fuentes
+└────────────────────────────────────┘
+```
+
+**Beneficios:**
+- ✅ Separación de responsabilidades
+- ✅ Fácil de navegar (17 archivos organizados)
+- ✅ Acoplamiento suelto via **Service Locator**
+- ✅ Testeable (lógica sin depender de OpenGL)
+- ✅ Extensible (agregar nuevos servicios es simple)
+
+---
+
+## 🔌 Service Locator Pattern
+
+El proyecto usa **Service Locator** para desacoplar componentes y centralizar dependencias:
+
+```java
+// En FlappyBirdGame.init():
+ServiceLocator.provideAudio(new SoundManager());
+
+// En Game.java cuando necesita audio:
+ServiceLocator.audio().playPointSound();
+
+// En Renderer.java cuando necesita fuentes:
+ServiceLocator.font().renderText("Score: 100", x, y, size, r, g, b);
+```
+
+### ¿Por qué Service Locator?
+
+**Antes (Acoplamiento fuerte):**
+```java
+public Renderer(SoundManager sound, ParticleSystem particles, TextureFont font) {
+    this.sound = sound;           // Dependencias inyectadas
+    this.particles = particles;   // Renderizer necesita TODO
+    this.font = font;
+}
+
+// Problema: Si agregas nuevo servicio, todos los constructores cambian
+```
+
+**Ahora (Acoplamiento suelto):**
+```java
+public Renderer() {
+    // Renderer NO conoce cómo se crean los servicios
+    // Los obtiene dinámicamente del Service Locator
+}
+
+// Usar cuando lo necesita:
+if (sound != null) ServiceLocator.audio().playJumpSound();
+```
+
+### Servicios Disponibles
+
+| Servicio | Interfaz | Implementación | Responsabilidad |
+|----------|----------|---|---|
+| Audio | `IAudioService` | `SoundManager` | Reproducción de sonidos |
+| Partículas | `IParticleService` | `ParticleSystem` | Efectos visuales |
+| Fuentes | `IFontService` | `TextureFont` | Renderizado de texto |
 
 ---
 
@@ -52,11 +140,15 @@ proyecto/
 
 ### 1. **FlappyBirdGame.java** - El Orquestador
 
+**Ubicación:** `src/main/java/com/graphics/flappybird/`  
+**Package:** `com.graphics.flappybird`
+
 **Responsabilidades:**
 - Inicializar GLFW, OpenGL y crear ventana
 - Gestionar el loop principal del juego
-- Procesar entrada del teclado
-- Coordinador entre Game, Renderer y audio
+- Procesar entrada del teclado (W, SPACE, R)
+- Orquestar entre `Game` (core), `Renderer` (rendering) y `ServiceLocator`
+- Registrar servicios en el **Service Locator**
 
 **Flujo principal:**
 ```
@@ -84,11 +176,15 @@ prevSpace = spaceNow;
 
 ### 2. **Game.java** - Lógica del Juego
 
+**Ubicación:** `src/main/java/com/graphics/flappybird/core/`  
+**Package:** `com.graphics.flappybird.core`
+
 **Responsabilidades:**
 - Gestionar estado del juego (started, gameOver)
-- Actualizar pájaros, tuberías y colisiones
+- Actualizar pájaros (`Bird`), tuberías (`Pipe`) y colisiones
 - Calcular puntuación y dificultad progresiva
 - Generar nuevas tuberías
+- Acceder a servicios via **Service Locator** (audio, partículas)
 
 **Estados:**
 ```
@@ -138,6 +234,9 @@ Afecta:
 
 ### 3. **Bird.java** - El Pájaro
 
+**Ubicación:** `src/main/java/com/graphics/flappybird/core/`  
+**Package:** `com.graphics.flappybird.core`
+
 **Propiedades:**
 - Posición (x, y)
 - Velocidad vertical (velocityY)
@@ -180,11 +279,15 @@ Efecto: El pájaro "mira" hacia donde va
 
 ### 4. **Renderer.java** - Motor de Renderizado
 
+**Ubicación:** `src/main/java/com/graphics/flappybird/rendering/`  
+**Package:** `com.graphics.flappybird.rendering`
+
 **Responsabilidades:**
 - Compilar shaders de OpenGL
-- Crear buffers de geometría
+- Crear buffers de geometría (VAO, VBO)
 - Renderizar cada elemento del juego
 - Gestionar transformaciones y colores
+- Acceder a servicios via **Service Locator** (fuentes, partículas)
 
 **Pipeline de Renderizado:**
 ```
@@ -223,6 +326,10 @@ height = 0.1
 ---
 
 ### 5. **TextureFont.java** - Renderizado de Texto
+
+**Ubicación:** `src/main/java/com/graphics/flappybird/rendering/`  
+**Package:** `com.graphics.flappybird.rendering`  
+**Interfaz:** Implementa `IFontService` (registrada en Service Locator)
 
 **¿Cómo funciona?**
 
@@ -416,9 +523,13 @@ pipe.colisionaCon(bird) {
 
 ---
 
-## 🎨 Sistemas Especiales
+## 🎨 Sistemas Especiales (Services)
 
-### ParticleSystem:
+### ParticleSystem.java
+
+**Ubicación:** `src/main/java/com/graphics/flappybird/effects/`  
+**Package:** `com.graphics.flappybird.effects`  
+**Interfaz:** Implementa `IParticleService` (registrada en Service Locator)
 ```
 jump_dust() {
     // Pequeñas partículas cuando salta
@@ -437,12 +548,17 @@ burst() {
 }
 ```
 
-### SoundManager:
-```
+### SoundManager.java
+
+**Ubicación:** `src/main/java/com/graphics/flappybird/audio/`  
+**Package:** `com.graphics.flappybird.audio`  
+**Interfaz:** Implementa `IAudioService` (registrada en Service Locator)
+
+```java
 playJumpSound() {
     // 800 Hz por 100ms
     Genera onda seno en tiempo real
-    Reproduce en thread separado
+    Reproduce en thread separado (ExecutorService)
     No bloquea el juego
 }
 
@@ -450,6 +566,19 @@ playPointSound() {
     // 1200 Hz por 150ms
     Más agudo (puntuación)
 }
+
+playGameOverSound() {
+    // Barrido de frecuencia 600→300 Hz en 300ms
+    Efecto descenso cuando mueres
+}
+```
+
+**Thread Safety:**
+```java
+ExecutorService executor = Executors.newSingleThreadExecutor();
+// ✅ Único thread para audio
+// ✅ Cola de tareas segura
+// ✅ No crea nuevo thread cada vez
 ```
 
 ### Dificultad Progresiva:
