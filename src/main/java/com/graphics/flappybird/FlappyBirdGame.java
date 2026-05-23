@@ -52,7 +52,9 @@ public class FlappyBirdGame {
     // Se usan para detectar solo la presión (no mantener presionado constantemente)
     private boolean prevW = false;      // Estado anterior de la tecla W (Jugador 1)
     private boolean prevSpace = false;  // Estado anterior de la tecla SPACE (Jugador 2)
+    private boolean prevUp = false;     // Estado anterior de la tecla UP ARROW (Jugador 3)
     private boolean prevR = false;      // Estado anterior de la tecla R (Reiniciar)
+    private boolean musicStopped = false; // Flag para detener la música solo una vez
 
     // Método principal que ejecuta el ciclo de vida del programa
     public void run() {
@@ -84,7 +86,7 @@ public class FlappyBirdGame {
 
         // Crear la ventana con las dimensiones y título especificados
         window = GLFW.glfwCreateWindow(windowWidth, windowHeight,
-                                        "Flappy Bird - 2 Players (P1: W, P2: SPACE)", 0, 0);
+                                        "Flappy Bird - 3 Players (P1: W, P2: SPACE, P3: UP ARROW)", 0, 0);
         if (window == 0) {
             throw new RuntimeException("Window creation failed");
         }
@@ -134,8 +136,7 @@ public class FlappyBirdGame {
     private void loop() {
         // Obtener el tiempo actual en segundos (para calcular deltaTime)
         float lastTime = (float) GLFW.glfwGetTime();
-        // Flag para detener la música solo una vez cuando el juego termina
-        boolean musicStopped = false;
+        // musicStopped es ahora una variable de clase (field) para acceso desde processInput()
 
         // Continuar mientras la ventana NO haya recibido señal de cierre (ESC o botón X)
         while (!GLFW.glfwWindowShouldClose(window)) {
@@ -227,11 +228,28 @@ public class FlappyBirdGame {
                 ServiceLocator.audio().playBackgroundMusic();
             } else if (game.bird2.alive) {
                 game.bird2.jump();
-                ServiceLocator.particles().jumpDust(game.bird2.x, game.bird2.y);
+                // ServiceLocator.particles().jumpDust(game.bird2.x, game.bird2.y);
                 ServiceLocator.audio().playJumpSound();
             }
         }
         prevSpace = spaceNow;
+
+        // ============ JUGADOR 3: Tecla UP ARROW para saltar ============
+        // Mismo patrón que jugadores anteriores con tecla diferente
+        boolean upNow = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_UP) == GLFW.GLFW_PRESS;
+
+        if (upNow && !prevUp) {
+            if (!game.gameStarted) {
+                game.start();
+                // Iniciar música de fondo cuando comienza el juego
+                ServiceLocator.audio().playBackgroundMusic();
+            } else if (game.bird3.alive) {
+                game.bird3.jump();
+                // ServiceLocator.particles().jumpDust(game.bird3.x, game.bird3.y);
+                ServiceLocator.audio().playJumpSound();
+            }
+        }
+        prevUp = upNow;
 
         // ============ REINICIO: Tecla R para reiniciar el juego ============
         // Obtener estado ACTUAL de la tecla R
@@ -242,6 +260,8 @@ public class FlappyBirdGame {
             // Detener música de fondo cuando se reinicia el juego
             ServiceLocator.audio().stopBackgroundMusic();
             game.reset();  // Reiniciar el juego a su estado inicial
+            // Reiniciar el flag de música para permitir que vuelva a sonar
+            musicStopped = false;
         }
         prevR = rNow;
     }
@@ -252,16 +272,17 @@ public class FlappyBirdGame {
      */
     private void updateWindowTitle() {
         // Construir un string con formato que incluya:
-        // - Puntuación del jugador 1 y 2
+        // - Puntuación de los tres jugadores
         // - Multiplicador de velocidad (dificultad progresiva)
         // - Estado del juego (Starting, Playing, o Game Over)
         String title = String.format(
-            "Flappy Bird - P1: %d | P2: %d | Speed: %.1fx | %s",
+            "Flappy Bird - P1: %d | P2: %d | P3: %d | Speed: %.1fx | %s",
             game.bird1.score,                    // Puntuación jugador 1
             game.bird2.score,                    // Puntuación jugador 2
+            game.bird3.score,                    // Puntuación jugador 3
             game.getDifficultyMultiplier(),      // Velocidad actual (aumenta con el tiempo)
             // Mostrar estado: si está game over, mostrar instrucción; si está jugando, mostrar "Playing"; si no ha empezado, mostrar instrucción de inicio
-            game.gameOver ? "GAME OVER (R to restart)" : (game.gameStarted ? "Playing" : "W/SPACE to start")
+            game.gameOver ? "GAME OVER (R to restart)" : (game.gameStarted ? "Playing" : "W/SPACE/UP to start")
         );
         // Cambiar el título de la ventana GLFW al nuevo string
         GLFW.glfwSetWindowTitle(window, title);

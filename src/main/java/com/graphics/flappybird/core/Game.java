@@ -4,17 +4,22 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
 import com.graphics.flappybird.effects.ParticleSystem;
 import com.graphics.flappybird.services.ServiceLocator;
 
 /**
- * Game: lógica central del Flappy Bird para dos jugadores.
+ * Game: lógica central del Flappy Bird para tres jugadores.
  * Gestiona pájaros, tuberías, colisiones, puntaje y dificultad progresiva.
  */
 public class Game {
     // Pájaros (jugadores).
     public Bird bird1;
     public Bird bird2;
+    public Bird bird3;
+
+    // Puntuación objetivo para terminar el juego
+    public static final int TARGET_SCORE = 7;
 
     // Tuberías activas.
     public List<Pipe> pipes;
@@ -35,7 +40,8 @@ public class Game {
 
     // Spawn positions.
     private static final float BIRD1_X = -0.55f; // Izquierda.
-    private static final float BIRD2_X = 0.15f;  // Derecha.
+    private static final float BIRD2_X = 0.15f;  // Centro.
+    private static final float BIRD3_X = 0.85f;  // Derecha.
     private static final float BIRD_START_Y = 0.0f;
 
     // Estados del juego.
@@ -52,6 +58,8 @@ public class Game {
                          0.98f, 0.85f, 0.20f); // Naranja
         bird2 = new Bird(BIRD2_X, BIRD_START_Y, BIRD_ANCHO, BIRD_ALTO,
                          0.20f, 0.85f, 0.98f); // Azul
+        bird3 = new Bird(BIRD3_X, BIRD_START_Y, BIRD_ANCHO, BIRD_ALTO,
+                         0.20f, 0.98f, 0.20f); // Verde
 
         pipes = new ArrayList<>();
         // Registrar el servicio de partículas en el Service Locator
@@ -68,6 +76,7 @@ public class Game {
     public void reset() {
         bird1.reset(BIRD1_X, BIRD_START_Y);
         bird2.reset(BIRD2_X, BIRD_START_Y);
+        bird3.reset(BIRD3_X, BIRD_START_Y);
         pipes.clear();
         gameStarted = false;
         gameOver = false;
@@ -82,6 +91,7 @@ public class Game {
         gameStarted = true;
         bird1.jump();
         bird2.jump();
+        bird3.jump();
     }
 
     /**
@@ -98,9 +108,11 @@ public class Game {
         // Actualizar pájaros.
         boolean bird1WasAlive = bird1.alive;
         boolean bird2WasAlive = bird2.alive;
+        boolean bird3WasAlive = bird3.alive;
 
         bird1.update(deltaTime);
         bird2.update(deltaTime);
+        bird3.update(deltaTime);
 
         // Efecto de partículas y sonido cuando un pájaro muere.
         if (bird1WasAlive && !bird1.alive) {
@@ -111,9 +123,13 @@ public class Game {
             ServiceLocator.particles().burst(bird2.x, bird2.y, bird2.colorR, bird2.colorG, bird2.colorB, 15);
             ServiceLocator.audio().playCollisionSound();
         }
+        if (bird3WasAlive && !bird3.alive) {
+            ServiceLocator.particles().burst(bird3.x, bird3.y, bird3.colorR, bird3.colorG, bird3.colorB, 15);
+            ServiceLocator.audio().playCollisionSound();
+        }
 
         // Actualizar dificultad según puntaje máximo.
-        int maxScore = Math.max(bird1.score, bird2.score);
+        int maxScore = Math.max(bird1.score, Math.max(bird2.score, bird3.score));
         float prevMultiplier = difficultyMultiplier;
         difficultyMultiplier = 1.0f + (maxScore * 0.05f); // +5% por punto.
         if (difficultyMultiplier > 2.0f) {
@@ -139,18 +155,26 @@ public class Game {
             Pipe p = it.next();
             p.update(pipeSpeed, deltaTime);
 
-            // Puntaje: cuando la tubería pasa los pájaros.
-            if (p.x + (TUBERIA_ANCHO * 0.5f) < BIRD1_X && !p.scored) {
-                p.scored = true;
+            // Puntaje: cuando la tubería pasa cada pájaro (independiente para cada uno).
+            // Se suma SOLO si el pájaro está vivo y cuando la tubería pasa sobre él
+            if (bird1.alive && p.x - (TUBERIA_ANCHO * 0.5f) < BIRD1_X && p.x + (TUBERIA_ANCHO * 0.5f) > BIRD1_X && !p.scoredBird1) {
+                p.scoredBird1 = true;
                 bird1.score++;
                 ServiceLocator.particles().scorePopup(bird1.x, bird1.y);
                 ServiceLocator.audio().playPointSound();
                 ServiceLocator.audio().playTensionSound(); // Sonido de tensión/velocidad.
             }
-            if (p.x + (TUBERIA_ANCHO * 0.5f) < BIRD2_X && !p.scored) {
-                p.scored = true;
+            if (bird2.alive && p.x - (TUBERIA_ANCHO * 0.5f) < BIRD2_X && p.x + (TUBERIA_ANCHO * 0.5f) > BIRD2_X && !p.scoredBird2) {
+                p.scoredBird2 = true;
                 bird2.score++;
                 ServiceLocator.particles().scorePopup(bird2.x, bird2.y);
+                ServiceLocator.audio().playPointSound();
+                ServiceLocator.audio().playTensionSound(); // Sonido de tensión/velocidad.
+            }
+            if (bird3.alive && p.x - (TUBERIA_ANCHO * 0.5f) < BIRD3_X && p.x + (TUBERIA_ANCHO * 0.5f) > BIRD3_X && !p.scoredBird3) {
+                p.scoredBird3 = true;
+                bird3.score++;
+                ServiceLocator.particles().scorePopup(bird3.x, bird3.y);
                 ServiceLocator.audio().playPointSound();
                 ServiceLocator.audio().playTensionSound(); // Sonido de tensión/velocidad.
             }
@@ -162,6 +186,9 @@ public class Game {
             if (bird2.alive && p.colisionaCon(bird2)) {
                 bird2.alive = false;
             }
+            if (bird3.alive && p.colisionaCon(bird3)) {
+                bird3.alive = false;
+            }
 
             // Remover tuberías fuera de pantalla.
             if (p.estaFueraDePanel()) {
@@ -169,8 +196,11 @@ public class Game {
             }
         }
 
-        // Game over: ambos pájaros mueren.
-        if (!bird1.alive && !bird2.alive && !gameOver) {
+        // Game over: cuando alguien alcanza TARGET_SCORE o cuando todos los pájaros mueren.
+        boolean winCondition = bird1.score >= TARGET_SCORE || bird2.score >= TARGET_SCORE || bird3.score >= TARGET_SCORE;
+        boolean loseCondition = !bird1.alive && !bird2.alive && !bird3.alive;
+
+        if ((winCondition || loseCondition) && !gameOver) {
             gameOver = true;
             ServiceLocator.audio().playGameOverSound(); // Sonido de derrota.
         }
@@ -192,9 +222,9 @@ public class Game {
     }
 
     /**
-     * Retorna el puntaje máximo de ambos jugadores.
+     * Retorna el puntaje máximo de los tres jugadores.
      */
     public int getMaxScore() {
-        return Math.max(bird1.score, bird2.score);
+        return Math.max(bird1.score, Math.max(bird2.score, bird3.score));
     }
 }

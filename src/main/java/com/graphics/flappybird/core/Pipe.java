@@ -14,15 +14,19 @@ public class Pipe {
     // Alto del hueco.
     public float gapHeight;
 
-    // Bandera para evitar contar puntos dos veces.
-    public boolean scored;
+    // Banderas para evitar contar puntos dos veces por cada jugador.
+    public boolean scoredBird1;
+    public boolean scoredBird2;
+    public boolean scoredBird3;
 
     public Pipe(float x, float gapCentroY, float width, float gapHeight) {
         this.x = x;
         this.gapCentroY = gapCentroY;
         this.width = width;
         this.gapHeight = gapHeight;
-        this.scored = false;
+        this.scoredBird1 = false;
+        this.scoredBird2 = false;
+        this.scoredBird3 = false;
     }
 
     /**

@@ -3,10 +3,11 @@ package com.graphics.flappybird.rendering;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+
 import javax.imageio.ImageIO;
+
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
-import org.lwjgl.opengl.GL13;
 
 /**
  * TextureLoader: carga imágenes PNG y las convierte en texturas OpenGL.

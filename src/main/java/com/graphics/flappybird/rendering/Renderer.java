@@ -246,11 +246,13 @@ public class Renderer {
         // LAYER 4: Sombras de pájaros (efecto de profundidad, debajo del pájaro).
         drawBirdShadow(game.bird1);
         drawBirdShadow(game.bird2);
+        drawBirdShadow(game.bird3);
 
         // LAYER 5: Pájaros geométricos (cuerpo, alas, pico, ojos).
         // Dibujado sobre todo lo anterior (más al frente).
         drawBirdGeometric(game.bird1);
         drawBirdGeometric(game.bird2);
+        drawBirdGeometric(game.bird3);
 
         // LAYER 6: Partículas (explosiones, polvo de salto, popup de score).
         // Se accede al servicio de partículas registrado en ServiceLocator.
@@ -950,35 +952,55 @@ public class Renderer {
         // Esto garantiza que los números aparezcan al frente (z-order correcto).
 
         // Panel para PLAYER 1 (esquina superior izquierda).
-        // Posición (-0.95, 0.88), tamaño (0.18, 0.08), alpha=0.85 (semi-transparente).
-        drawRectAlpha(-0.95f, 0.88f, 0.18f, 0.08f, ColorPalette.HUD_P1_R, ColorPalette.HUD_P1_G, ColorPalette.HUD_P1_B, 0.85f);
+        // Posición (-0.80, 0.88), tamaño (0.16, 0.08), alpha=0.85 (semi-transparente).
+        drawRectAlpha(-0.80f, 0.88f, 0.16f, 0.08f, ColorPalette.HUD_P1_R, ColorPalette.HUD_P1_G, ColorPalette.HUD_P1_B, 0.85f);
 
-        // Panel para PLAYER 2 (esquina superior derecha).
-        // Similar al panel P1 pero en X=0.77f (derecha).
-        drawRectAlpha(0.77f, 0.88f, 0.18f, 0.08f, ColorPalette.HUD_P2_R, ColorPalette.HUD_P2_G, ColorPalette.HUD_P2_B, 0.85f);
+        // Panel para PLAYER 2 (centro superior).
+        drawRectAlpha(-0.08f, 0.88f, 0.16f, 0.08f, ColorPalette.HUD_P2_R, ColorPalette.HUD_P2_G, ColorPalette.HUD_P2_B, 0.85f);
 
-        // Panel para DIFICULTAD (centro superior).
+        // Panel para PLAYER 3 (esquina superior derecha).
+        drawRectAlpha(0.64f, 0.88f, 0.16f, 0.08f, 0.20f, 0.98f, 0.20f, 0.85f); // Verde para P3
+
+        // Panel para DIFICULTAD (parte inferior).
         // Ancho más grande (0.24f) porque el número es más complejo.
-        drawRectAlpha(-0.12f, 0.88f, 0.24f, 0.08f, ColorPalette.HUD_DIFF_R, ColorPalette.HUD_DIFF_G, ColorPalette.HUD_DIFF_B, 0.75f);
+        drawRectAlpha(-0.12f, 0.70f, 0.24f, 0.08f, ColorPalette.HUD_DIFF_R, ColorPalette.HUD_DIFF_G, ColorPalette.HUD_DIFF_B, 0.75f);
 
         // ===== DESPUÉS: RENDERIZAR LOS NÚMEROS ENCIMA DE LOS PANELES =====
-        // Usar el servicio de fuente registrado en ServiceLocator.
+        // IMPORTANTE: Reactivar shader y VAO porque renderNumber() puede desactivarlos
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
 
         // Puntuación P1: renderizar en el panel izquierdo.
         // Parámetros: (valor, posX, posY, tamaño, colorR, colorG, colorB).
-        ServiceLocator.font().renderNumber(game.bird1.score, -0.94f, 0.85f, 0.25f,
+        ServiceLocator.font().renderNumber(game.bird1.score, -0.79f, 0.85f, 0.25f,
                                            ColorPalette.HUD_TEXT_R, ColorPalette.HUD_TEXT_G, ColorPalette.HUD_TEXT_B);
 
-        // Puntuación P2: renderizar en el panel derecho.
-        ServiceLocator.font().renderNumber(game.bird2.score, 0.78f, 0.85f, 0.25f,
+        // Reactivar después de cada renderNumber
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
+
+        // Puntuación P2: renderizar en el panel central.
+        ServiceLocator.font().renderNumber(game.bird2.score, -0.07f, 0.85f, 0.25f,
                                            ColorPalette.HUD_TEXT_R, ColorPalette.HUD_TEXT_G, ColorPalette.HUD_TEXT_B);
+
+        // Reactivar después de cada renderNumber
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
+
+        // Puntuación P3: renderizar en el panel derecho.
+        ServiceLocator.font().renderNumber(game.bird3.score, 0.65f, 0.85f, 0.25f,
+                                           ColorPalette.HUD_TEXT_R, ColorPalette.HUD_TEXT_G, ColorPalette.HUD_TEXT_B);
+
+        // Reactivar después de cada renderNumber
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
 
         // Multiplicador de dificultad: redondeado a 1 decimal.
         // Ejemplo: 1.53 → redondea a 1.5, 2.0 → 2.0.
         // Fórmula: multiplicar por 10, redondear, dividir entre 10.
         int diffLevel = Math.round(game.getDifficultyMultiplier() * 10) / 10;
-        // Renderizar en el panel central.
-        ServiceLocator.font().renderNumber(diffLevel, -0.09f, 0.85f, 0.25f,
+        // Renderizar en el panel inferior.
+        ServiceLocator.font().renderNumber(diffLevel, -0.09f, 0.67f, 0.25f,
                                            ColorPalette.HUD_TEXT_R, ColorPalette.HUD_TEXT_G, ColorPalette.HUD_TEXT_B);
     }
 
@@ -1001,31 +1023,34 @@ public class Renderer {
 
         // TÃTULO
         // drawRectAlpha(-0.5f, 0.65f, 1.0f, 0.15f, 0.2f, 0.2f, 0.3f, 0.9f);
-        ServiceLocator.font().renderText("FLAPPY BIRD 2P", -0.42f, 0.66f, 0.09f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("FLAPPY BIRD 3P", -0.42f, 0.66f, 0.09f, 1.0f, 1.0f, 1.0f);
 
         // CONTROLES - P1
         // drawRectAlpha(-0.75f, 0.40f, 0.45f, 0.15f, 0.98f, 0.85f, 0.20f, 0.85f);
-        ServiceLocator.font().renderText("PLAYER 1", -0.73f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
-        ServiceLocator.font().renderText("PRESIONE W", -0.73f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
+        ServiceLocator.font().renderText("PLAYER 1", -0.88f, 0.48f, 0.065f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("W", -0.88f, 0.40f, 0.06f, 0.95f, 0.95f, 0.95f);
 
         // CONTROLES - P2
         // drawRectAlpha(0.30f, 0.40f, 0.45f, 0.15f, 0.20f, 0.85f, 0.98f, 0.85f);
-        ServiceLocator.font().renderText("PLAYER 2", 0.32f, 0.43f, 0.07f, 1.0f, 1.0f, 1.0f);
-        ServiceLocator.font().renderText("PRESIONE SPACE", 0.32f, 0.35f, 0.06f, 0.95f, 0.95f, 0.95f);
+        ServiceLocator.font().renderText("PLAYER 2", -0.02f, 0.48f, 0.065f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("SPACE", 0.02f, 0.40f, 0.06f, 0.95f, 0.95f, 0.95f);
+
+        // CONTROLES - P3
+        ServiceLocator.font().renderText("PLAYER 3", 0.72f, 0.48f, 0.065f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("FLECHA UP", 0.72f, 0.40f, 0.06f, 0.95f, 0.95f, 0.95f);
 
         // INSTRUCCIÃ“N PARA COMENZAR
         // drawRectAlpha(-0.5f, 0.18f, 1.0f, 0.12f, 0.7f, 0.6f, 0.2f, 0.8f);
-        ServiceLocator.font().renderText("TOCA PARA INICIAR EL JUEGO", -0.45f, 0.20f, 0.075f, 0.2f, 0.2f, 0.2f);
+        ServiceLocator.font().renderText("PRESIONA CUALQUIERA PARA INICIAR", -0.45f, 0.20f, 0.07f, 0.2f, 0.2f, 0.2f);
 
         // OBJETIVO DEL JUEGO
         // drawRectAlpha(-0.5f, -0.05f, 1.0f, 0.15f, 1.2f, 1.5f, 1.8f, 0.75f);
-        ServiceLocator.font().renderText("OBJETIVO: EVITAR TUBOS", -0.48f, 0.02f, 0.07f, 1.0f, 1.0f, 1.0f);
-        ServiceLocator.font().renderText("SOBREVIVE TODO EL TIEMPO QUE PUEDAS", -0.48f, -0.04f, 0.06f, 0.9f, 0.9f, 0.9f);
+        ServiceLocator.font().renderText("OBJETIVO: LLEGA A 10 PUNTOS PRIMERO", -0.45f, 0.02f, 0.065f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("O SE EL ULTIMO EN PIE", -0.48f, -0.04f, 0.06f, 0.9f, 0.9f, 0.9f);
 
         // DIFICULTAD PROGRESIVA
         // drawRectAlpha(-0.5f, -0.35f, 1.0f, 0.15f, 0.8f, 0.4f, 0.2f, 0.75f);
-        ServiceLocator.font().renderText("LA DIFICULTAD AUMENTA", -0.48f, -0.28f, 0.07f, 1.0f, 1.0f, 1.0f);
-        ServiceLocator.font().renderText("GANA PUNTOS PASANDO HUECOS", -0.48f, -0.34f, 0.06f, 0.9f, 0.9f, 0.9f);
+        ServiceLocator.font().renderText("LA DIFICULTAD AUMENTA CON LOS PUNTOS", -0.45f, -0.20f, 0.065f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
@@ -1035,37 +1060,91 @@ public class Renderer {
      */
     private void drawGameOverScreen(Game game, int windowWidth, int windowHeight) {
         // ===== REACTIVAR SHADER PROGRAM Y VAO =====
-        // IMPORTANTE: TextureFont.renderText() puede desactivar el programa y VAO.
-        // Reactivamos aquí para asegurar que drawRectAlpha funcione correctamente.
         GL20.glUseProgram(programa);
         GL30.glBindVertexArray(vao);
 
-        // ===== FONDO MODAL: RECTÁNGULO ROJO SEMI-TRANSPARENTE =====
-        // Cubre toda la pantalla (2.0 x 2.0) con color rojo.
-        // Alpha = 0.85 (85% opaco, da sensación de urgencia/derrota).
-        drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, ColorPalette.MODAL_GAMEOVER_R, ColorPalette.MODAL_GAMEOVER_G, ColorPalette.MODAL_GAMEOVER_B, 0.85f);
+        // ===== DETERMINAR GANADOR =====
+        int winnerNumber = 0;
+        float winnerColorR = 1.0f, winnerColorG = 1.0f, winnerColorB = 1.0f;
+        float bgR = 0.8f, bgG = 0.1f, bgB = 0.1f; // Rojo por defecto (derrota)
 
-        // ===== TÍTULO: GAME OVER =====
-        // Texto grande en blanco, tamaño=0.08.
-        // (Fondo comentado: drawRectAlpha(-0.6f, 0.55f, ...))
-        ServiceLocator.font().renderText("JUEGO TERMINADO", -0.48f, 0.565f, 0.08f, 1.0f, 1.0f, 1.0f);
+        if (game.bird1.score >= Game.TARGET_SCORE) {
+            winnerNumber = 1;
+            winnerColorR = 0.98f; winnerColorG = 0.85f; winnerColorB = 0.20f; // Naranja
+            bgR = 0.98f; bgG = 0.85f; bgB = 0.20f;
+        } else if (game.bird2.score >= Game.TARGET_SCORE) {
+            winnerNumber = 2;
+            winnerColorR = 0.20f; winnerColorG = 0.85f; winnerColorB = 0.98f; // Azul
+            bgR = 0.20f; bgG = 0.85f; bgB = 0.98f;
+        } else if (game.bird3.score >= Game.TARGET_SCORE) {
+            winnerNumber = 3;
+            winnerColorR = 0.20f; winnerColorG = 0.98f; winnerColorB = 0.20f; // Verde
+            bgR = 0.20f; bgG = 0.98f; bgB = 0.20f;
+        }
 
-        // ===== PUNTUACIÓN PLAYER 1 =====
-        // Muestra la puntuación final del pájaro 1.
-        // Concatenación de string: "P1: " + puntuación.
-        // (Fondo comentado: drawRectAlpha(-0.6f, 0.30f, ...))
-        ServiceLocator.font().renderText("P1: " + game.bird1.score, -0.55f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
+        // ===== FONDO MODAL CON COLOR DEL GANADOR =====
+        drawRectAlpha(0.0f, 0.0f, 2.0f, 2.0f, bgR, bgG, bgB, 0.75f);
 
-        // ===== PUNTUACIÓN PLAYER 2 =====
-        // Muestra la puntuación final del pájaro 2.
-        // Concatenación de string: "P2: " + puntuación.
-        // (Fondo comentado: drawRectAlpha(0.05f, 0.30f, ...))
-        ServiceLocator.font().renderText("P2: " + game.bird2.score, 0.12f, 0.355f, 0.07f, 1.0f, 1.0f, 1.0f);
+        // ===== TÍTULO: GANADOR =====
+        if (winnerNumber > 0) {
+            ServiceLocator.font().renderText("¡GANADOR!", -0.38f, 0.72f, 0.14f, 1.0f, 1.0f, 1.0f);
+            ServiceLocator.font().renderText("JUGADOR " + winnerNumber, -0.40f, 0.58f, 0.11f, 1.0f, 1.0f, 1.0f);
+        } else {
+            ServiceLocator.font().renderText("JUEGO TERMINADO", -0.48f, 0.65f, 0.11f, 1.0f, 1.0f, 1.0f);
+        }
+
+        // Reactivar shader después de renderText
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
+
+        // ===== PANELES CON SCORES =====
+        // Panel P1 (Naranja)
+        drawRectAlpha(-0.75f, 0.35f, 0.22f, 0.14f, 0.98f, 0.85f, 0.20f, 0.8f);
+        // Destacar ganador
+        if (winnerNumber == 1) {
+            drawRectAlpha(-0.75f, 0.35f, 0.22f, 0.14f, 1.0f, 1.0f, 1.0f, 0.3f);
+        }
+        ServiceLocator.font().renderNumber(game.bird1.score, -0.74f, 0.32f, 0.12f, 0.0f, 0.0f, 0.0f);
+
+        // Reactivar shader
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
+
+        // Panel P2 (Azul)
+        drawRectAlpha(-0.05f, 0.35f, 0.22f, 0.14f, 0.20f, 0.85f, 0.98f, 0.8f);
+        // Destacar ganador
+        if (winnerNumber == 2) {
+            drawRectAlpha(-0.05f, 0.35f, 0.22f, 0.14f, 1.0f, 1.0f, 1.0f, 0.3f);
+        }
+        ServiceLocator.font().renderNumber(game.bird2.score, -0.04f, 0.32f, 0.12f, 0.0f, 0.0f, 0.0f);
+
+        // Reactivar shader
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
+
+        // Panel P3 (Verde)
+        drawRectAlpha(0.65f, 0.35f, 0.22f, 0.14f, 0.20f, 0.98f, 0.20f, 0.8f);
+        // Destacar ganador
+        if (winnerNumber == 3) {
+            drawRectAlpha(0.65f, 0.35f, 0.22f, 0.14f, 1.0f, 1.0f, 1.0f, 0.3f);
+        }
+        ServiceLocator.font().renderNumber(game.bird3.score, 0.66f, 0.32f, 0.12f, 0.0f, 0.0f, 0.0f);
+
+        // Reactivar shader
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
+
+        // ===== ETIQUETAS DE JUGADORES =====
+        ServiceLocator.font().renderText("P1", -0.75f, 0.50f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("P2", -0.05f, 0.50f, 0.07f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("P3", 0.65f, 0.50f, 0.07f, 1.0f, 1.0f, 1.0f);
+
+        // Reactivar shader
+        GL20.glUseProgram(programa);
+        GL30.glBindVertexArray(vao);
 
         // ===== INSTRUCCIÓN: PRESIONAR R PARA REINICIAR =====
-        // Texto en la parte inferior indicando cómo reiniciar el juego.
-        // (Fondo comentado: drawRectAlpha(-0.6f, 0.05f, ...))
-        ServiceLocator.font().renderText("PRESIONA R PARA REINICIAR", -0.48f, 0.075f, 0.06f, 1.0f, 1.0f, 1.0f);
+        ServiceLocator.font().renderText("PRESIONA R PARA REINICIAR", -0.48f, -0.20f, 0.07f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
